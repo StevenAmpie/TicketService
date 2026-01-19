@@ -1,11 +1,8 @@
 import { Module } from "@nestjs/common";
-import { ClientModule } from "./client/client.module";
-import { AgentModule } from "./agent/agent.module";
-import { TicketModule } from "./ticket/ticket.module";
-import { CommentModule } from "./comment/comment.module";
+import { AuthModule } from "./auth/auth.module";
 
 @Module({
-  imports: [ClientModule, AgentModule, TicketModule, CommentModule],
+  imports: [AuthModule],
   controllers: [],
   providers: [],
 })
