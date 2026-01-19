@@ -4,8 +4,8 @@
 
 ## Authors
 
-- **Steven Ampie**
-- **Emiola Fagbemi**
+- **Ampie, Steven**
+- **Fagbemi, Emiola**
 
 
 
