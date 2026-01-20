@@ -11,6 +11,7 @@ export class AuthController {
 
   @Get()
   TestMessage() {
-    return "Pass";
+    const message = "Pass";
+    return message;
   }
 }
