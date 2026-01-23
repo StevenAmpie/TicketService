@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
@@ -73,9 +74,9 @@
     "testEnvironment": "node"
   },
   "lint-staged": {
-  "*.{js,ts,jsx,tsx}": [
-    "eslint --fix",
-    "prettier --write"
-  ]
-}
+    "*.{js,ts,jsx,tsx}": [
+      "eslint",
+      "prettier --check"
+    ]
+  }
 }
