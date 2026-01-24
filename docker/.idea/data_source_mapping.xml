@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="DataSourcePerFileMappings">
-    <file url="file://$PROJECT_DIR$/database-code/01-tables.sql" value="121be5ae-c544-42cb-b134-3afc15c143a2" />
-    <file url="file://$PROJECT_DIR$/database-code/03-triggers.sql" value="121be5ae-c544-42cb-b134-3afc15c143a2" />
-  </component>
-</project>
