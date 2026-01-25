@@ -8,6 +8,7 @@ export class Agent {
   id: string;
 
   @Column({
+    name: "fullName",
     type: "varchar",
     length: 15,
     unique: true,
@@ -16,6 +17,7 @@ export class Agent {
   fullName: string;
 
   @Column({
+    name: "dateOfBirth",
     type: "date",
     nullable: false,
   })

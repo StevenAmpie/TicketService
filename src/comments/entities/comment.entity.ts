@@ -12,10 +12,11 @@ export class Comment {
   content: string;
 
   @Column({
+    name: "publishedAt",
     type: "timestamp",
     nullable: false,
   })
-  publishedAt: Date; //look this up
+  publishedAt: Date;
 
   @Column({
     type: "varchar",
@@ -25,24 +26,28 @@ export class Comment {
   role: string;
 
   @Column({
+    name: "clientId",
     type: "uuid",
     nullable: true,
   })
   clientId: string;
 
   @Column({
+    name: "agentId",
     type: "uuid",
     nullable: true,
   })
   agentId: string;
 
   @Column({
+    name: "ticketId",
     type: "uuid",
     nullable: false,
   })
   ticketId: string;
 
   @Column({
+    name: "isRead",
     type: "boolean",
     nullable: false,
     default: false,
