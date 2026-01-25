@@ -7,12 +7,14 @@ export class RefreshToken {
   id: string;
 
   @Column({
+    name: "clientId",
     type: "uuid",
     nullable: false,
   })
   clientId: string;
 
   @Column({
+    name: "expiresAt",
     type: "bigint",
     nullable: false,
   })

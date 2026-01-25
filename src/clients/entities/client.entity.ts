@@ -16,6 +16,7 @@ export class Client {
   username: string;
 
   @Column({
+    name: "dateOfBirth",
     type: "date",
     nullable: false,
   })

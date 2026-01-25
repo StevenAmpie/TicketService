@@ -27,12 +27,14 @@ export class Ticket {
   picture: string;
 
   @Column({
+    name: "openedAt",
     type: "timestamp",
     nullable: false,
   })
   openedAt: Date;
 
   @Column({
+    name: "closedAt",
     type: "timestamp",
     nullable: false,
   })
@@ -47,6 +49,7 @@ export class Ticket {
   status: string;
 
   @Column({
+    name: "clientId",
     type: "uuid",
     nullable: false,
   })
