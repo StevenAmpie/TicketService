@@ -19,7 +19,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
       password: "randomPassword",
       database: "megatech",
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
     }),
     AuthModule,
     AgentsModule,
