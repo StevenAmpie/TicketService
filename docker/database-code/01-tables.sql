@@ -1,4 +1,4 @@
-CREATE TABLE Clients (
+CREATE TABLE "Clients" (
     id UUID CONSTRAINT pk_clients_id PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(15) NOT NULL CONSTRAINT uq_clients_username UNIQUE,
     "dateOfBirth" DATE NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE Clients (
     CONSTRAINT ck_clients_email CHECK (email !~* '^[A-Za-z][A-Za-z0-9._]*@megatech\.org$' AND email ~* '^[A-Za-z][A-Za-z0-9._]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
 
-CREATE TABLE Agents (
+CREATE TABLE "Agents" (
     id UUID CONSTRAINT pk_agents_id PRIMARY KEY DEFAULT gen_random_uuid(),
     "fullName" VARCHAR(15) NOT NULL,
     "dateOfBirth" DATE NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE Agents (
     CONSTRAINT ck_clients_email CHECK (email ~* '^[A-Za-z][A-Za-z0-9._]*@megatech\.org$')
 );
 
-CREATE TABLE Tickets (
+CREATE TABLE "Tickets" (
     id UUID CONSTRAINT pk_tickets_id PRIMARY KEY DEFAULT uuidv7(),
     title VARCHAR(100) NOT NULL,
     detail TEXT NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE Tickets (
     CONSTRAINT fk_tickets_clientId FOREIGN KEY ("clientId") REFERENCES Clients(id)
 );
 
-CREATE TABLE Comments (
+CREATE TABLE "Comments" (
     id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_comments_id PRIMARY KEY,
     content TEXT NOT NULL,
     "publishedAt" TIMESTAMP NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE Comments (
     CONSTRAINT fk_comments_ticketId FOREIGN KEY ("ticketId") REFERENCES Tickets(id)
     );
 
-CREATE TABLE TicketsCases (
+CREATE TABLE "TicketsCases" (
      "ticketId" UUID,
      "agentId" UUID,
      CONSTRAINT pk_ticketCases_ticketId_agentId PRIMARY KEY ("ticketId", "agentId"),
@@ -58,7 +58,7 @@ CREATE TABLE TicketsCases (
      CONSTRAINT fk_ticketCases_agentId FOREIGN KEY ("agentId") REFERENCES Agents (id)
 );
 
-CREATE TABLE RefreshTokens (
+CREATE TABLE "RefreshTokens" (
     id TEXT CONSTRAINT pk_refreshTokens PRIMARY KEY,
     "clientId" UUID NOT NULL,
     "expiresAt" BIGINT NOT NULL,
