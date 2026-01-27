@@ -32,7 +32,7 @@ CREATE TABLE "Tickets" (
     status VARCHAR(10) NOT NULL DEFAULT 'opened',
     "clientId" UUID NOT NULL,
     CONSTRAINT ck_tickets_status CHECK(status in('opened', 'processing', 'processed', 'eliminated')),
-    CONSTRAINT fk_tickets_clientId FOREIGN KEY ("clientId") REFERENCES Clients(id)
+    CONSTRAINT fk_tickets_clientId FOREIGN KEY ("clientId") REFERENCES "Clients"(id)
 );
 
 CREATE TABLE "Comments" (
@@ -45,22 +45,22 @@ CREATE TABLE "Comments" (
     "ticketId" UUID NOT NULL,
     "isRead" BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT ck_comments_role CHECK (role in ('client', 'agent')),
-    CONSTRAINT fk_comments_clientId FOREIGN KEY ("clientId") REFERENCES Clients(id),
-    CONSTRAINT fk_comments_agentId FOREIGN KEY ("agentId") REFERENCES Agents(id),
-    CONSTRAINT fk_comments_ticketId FOREIGN KEY ("ticketId") REFERENCES Tickets(id)
+    CONSTRAINT fk_comments_clientId FOREIGN KEY ("clientId") REFERENCES "Clients"(id),
+    CONSTRAINT fk_comments_agentId FOREIGN KEY ("agentId") REFERENCES "Agents"(id),
+    CONSTRAINT fk_comments_ticketId FOREIGN KEY ("ticketId") REFERENCES "Tickets"(id)
     );
 
 CREATE TABLE "TicketsCases" (
      "ticketId" UUID,
      "agentId" UUID,
      CONSTRAINT pk_ticketCases_ticketId_agentId PRIMARY KEY ("ticketId", "agentId"),
-     CONSTRAINT fk_ticketCases_ticketId FOREIGN KEY ("ticketId") REFERENCES Tickets (id),
-     CONSTRAINT fk_ticketCases_agentId FOREIGN KEY ("agentId") REFERENCES Agents (id)
+     CONSTRAINT fk_ticketCases_ticketId FOREIGN KEY ("ticketId") REFERENCES "Tickets" (id),
+     CONSTRAINT fk_ticketCases_agentId FOREIGN KEY ("agentId") REFERENCES "Agents" (id)
 );
 
 CREATE TABLE "RefreshTokens" (
     id TEXT CONSTRAINT pk_refreshTokens PRIMARY KEY,
     "clientId" UUID NOT NULL,
     "expiresAt" BIGINT NOT NULL,
-    CONSTRAINT fk_refreshTokens FOREIGN KEY ("clientId") REFERENCES Clients(id)
+    CONSTRAINT fk_refreshTokens FOREIGN KEY ("clientId") REFERENCES "Clients"(id)
 );
