@@ -1,10 +1,10 @@
-import { Entity, Column, PrimaryColumn, OneToMany } from "typeorm";
+import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Comment } from "../../comments/entities/comment.entity";
 import { Ticket } from "../../tickets/entities/ticket.entity";
 
 @Entity("Clients")
 export class Client {
-  @PrimaryColumn("uuid")
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column({
