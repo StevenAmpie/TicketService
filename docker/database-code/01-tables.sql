@@ -38,7 +38,7 @@ CREATE TABLE "Tickets" (
 CREATE TABLE "Comments" (
                             id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_comments_id PRIMARY KEY,
                             content TEXT NOT NULL,
-                            "publishedAt" TIMESTAMP NOT NULL,
+                            "publishedAt" TIMESTAMPTZ(0) DEFAULT NOW() NOT NULL,
                             role VARCHAR (6) NOT NULL,
                             "clientId" UUID,
                             "agentId" UUID,
