@@ -2,6 +2,7 @@ import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { ClientsService } from "./clients.service";
 import { Client } from "./entities/client.entity";
+import { ConfigService } from "@nestjs/config";
 
 describe("clientsService", () => {
   let clientsService: ClientsService;
@@ -22,7 +23,7 @@ describe("clientsService", () => {
       dateOfBirth: "2004-01-04",
       email: "steven2.ampie@gmail.com",
       password: "$2b$10$5sgBwZ5uZ18LXXH1LWLZsunv1CaqIw7mp73J.XgCVG8525zyrcSLW",
-      picture: "https://ruta.com",
+      picture: "19f90c0f-da9c-4c5c-8036-b10a337e694c.jpg",
       role: "client",
     },
   ];
@@ -36,6 +37,12 @@ describe("clientsService", () => {
           useValue: {
             find: jest.fn().mockResolvedValue(mockClient),
             findOneBy: jest.fn().mockResolvedValue(mockClient[0]),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            getOrThrow: jest.fn(() => "test"),
           },
         },
       ],
