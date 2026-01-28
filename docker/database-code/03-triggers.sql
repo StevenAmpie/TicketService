@@ -7,10 +7,28 @@ RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER t_changeTicketStatus
+CREATE TRIGGER t_changeTicketStatusToProcessing
     AFTER INSERT ON "TicketsCases"
     FOR EACH ROW
     EXECUTE FUNCTION changeTicketStatusToProcessing();
+
+CREATE OR REPLACE FUNCTION updateClosedAt()
+RETURNS TRIGGER AS $$
+BEGIN
+        IF NEW.status = 'processed'
+            THEN
+UPDATE "Tickets"
+SET "closedAt" = NOW() WHERE id = NEW."ticketId";
+RETURN NULL;
+END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER t_changeTicketStatusToProcessed
+    AFTER UPDATE ON "Tickets"
+    FOR EACH ROW
+    EXECUTE FUNCTION updateClosedAt();
+
 
 CREATE OR REPLACE FUNCTION checkForTwoNulls()
 RETURNS TRIGGER AS $$

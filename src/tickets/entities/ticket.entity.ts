@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryColumn, OneToMany } from "typeorm";
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  OneToMany,
+  CreateDateColumn,
+} from "typeorm";
 import { Comment } from "../../comments/entities/comment.entity";
 import { Agent } from "../../agents/entities/agent.entity";
 
@@ -26,9 +32,9 @@ export class Ticket {
   })
   picture: string;
 
-  @Column({
+  @CreateDateColumn({
     name: "openedAt",
-    type: "timestamp",
+    type: "timestamptz",
     nullable: false,
   })
   openedAt: Date;
