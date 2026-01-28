@@ -1,4 +1,4 @@
-/*import { Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { CreateTicketsCaseDto } from "./dto/create-tickets-case.dto";
 import { UpdateTicketsCaseDto } from "./dto/update-tickets-case.dto";
 
@@ -23,4 +23,4 @@ export class TicketsCasesService {
   remove(id: number) {
     return `This action removes a #${id} ticketsCase`;
   }
-}*/
+}

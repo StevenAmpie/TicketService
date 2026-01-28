@@ -1,10 +1,10 @@
-import { Entity, Column, PrimaryColumn, OneToMany } from "typeorm";
+import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Ticket } from "../../tickets/entities/ticket.entity";
 import { Comment } from "../../comments/entities/comment.entity";
 
 @Entity("Agents")
 export class Agent {
-  @PrimaryColumn("uuid")
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column({
@@ -46,7 +46,6 @@ export class Agent {
   @Column({
     type: "char",
     length: 5,
-    nullable: false,
     default: "agent",
   })
   role: string;

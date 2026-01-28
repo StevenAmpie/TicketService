@@ -1,18 +1,21 @@
-/*
 import {
   Controller,
   Get,
   Post,
   Body,
-  Patch,
+  Put,
   Param,
-  Delete,
+  UsePipes,
+  ValidationPipe,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { AgentsService } from "./agents.service";
 import { CreateAgentDto } from "./dto/create-agent.dto";
 import { UpdateAgentDto } from "./dto/update-agent.dto";
+import type { UUID } from "node:crypto";
 
 @Controller("agents")
+@UsePipes(new ValidationPipe({ transform: true }))
 export class AgentsController {
   constructor(private readonly agentsService: AgentsService) {}
 
@@ -22,23 +25,21 @@ export class AgentsController {
   }
 
   @Get()
-  findAll() {
-    return this.agentsService.findAll();
+  async findAll() {
+    const allAgents = await this.agentsService.findAll();
+    return { message: allAgents };
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.agentsService.findOne(+id);
+  findOne(@Param("id", new ParseUUIDPipe()) id: UUID) {
+    return this.agentsService.findOne(id);
   }
 
-  @Patch(":id")
-  update(@Param("id") id: string, @Body() updateAgentDto: UpdateAgentDto) {
-    return this.agentsService.update(+id, updateAgentDto);
-  }
-
-  @Delete(":id")
-  remove(@Param("id") id: string) {
-    return this.agentsService.remove(+id);
+  @Put(":id")
+  update(
+    @Param("id", new ParseUUIDPipe()) id: UUID,
+    @Body() updateAgentDto: UpdateAgentDto,
+  ) {
+    return this.agentsService.update(id, updateAgentDto);
   }
 }
-*/
