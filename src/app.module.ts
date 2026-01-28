@@ -7,17 +7,21 @@ import { TicketsModule } from "./tickets/tickets.module";
 import { CommentsModule } from "./comments/comments.module";
 import { TicketsCasesModule } from "./tickets-cases/tickets-cases.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import awsConfig from "./config/aws.config";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      load: [awsConfig],
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: "postgres",
-      host: "localhost",
-      port: 5433,
-      username: "megatech",
-      password: "randomPassword",
-      database: "megatech",
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: false,
     }),
