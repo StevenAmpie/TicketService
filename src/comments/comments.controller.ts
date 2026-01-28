@@ -1,4 +1,4 @@
-/*import {
+import {
   Controller,
   Get,
   Post,
@@ -39,4 +39,4 @@ export class CommentsController {
   remove(@Param("id") id: string) {
     return this.commentsService.remove(+id);
   }
-}*/
+}

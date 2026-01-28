@@ -1,4 +1,4 @@
-/*import {
+import {
   Controller,
   Get,
   Post,
@@ -42,4 +42,4 @@ export class TicketsCasesController {
   remove(@Param("id") id: string) {
     return this.ticketsCasesService.remove(+id);
   }
-}*/
+}
