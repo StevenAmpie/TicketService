@@ -5,6 +5,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Client } from "./entities/client.entity";
 import { Not, Repository } from "typeorm";
 import { hashPassword } from "../helpers/hashPassword";
+import type { Express } from "express";
 
 @Injectable()
 export class ClientsService {
@@ -13,7 +14,7 @@ export class ClientsService {
     private readonly clientsRepository: Repository<Client>,
   ) {}
 
-  async create(createClientDto: CreateClientDto) {
+  async create(createClientDto: CreateClientDto, file: Express.Multer.File) {
     const exceptions: string[] = [];
     const clientUsername = await this.clientsRepository.findOneBy({
       username: createClientDto.username,
@@ -37,7 +38,7 @@ export class ClientsService {
     // toDO = Save image in S3 instance, and then added public url.
 
     createClientDto["password"] = await hashPassword(createClientDto.password);
-    createClientDto["picture"] = "ruta";
+    createClientDto["picture"] = file.originalname;
     const newClient = this.clientsRepository.create(createClientDto);
     return await this.clientsRepository.save(newClient);
   }
