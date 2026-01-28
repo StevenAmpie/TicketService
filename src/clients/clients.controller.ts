@@ -1,42 +1,49 @@
-/*import {
+import {
   Controller,
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
+  UseInterceptors,
+  UploadedFile,
+  ParseUUIDPipe,
+  Put,
 } from "@nestjs/common";
 import { ClientsService } from "./clients.service";
 import { CreateClientDto } from "./dto/create-client.dto";
 import { UpdateClientDto } from "./dto/update-client.dto";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { IsLegalPipe } from "./pipes/isLegal.pipe";
+import type { Express } from "express";
 
 @Controller("clients")
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Post()
-  create(@Body() createClientDto: CreateClientDto) {
-    return this.clientsService.create(createClientDto);
+  @UseInterceptors(FileInterceptor("file"))
+  async create(
+    @Body(new IsLegalPipe()) createClientDto: CreateClientDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return await this.clientsService.create(createClientDto, file);
   }
 
   @Get()
-  findAll() {
-    return this.clientsService.findAll();
+  async findAll() {
+    return await this.clientsService.findAll();
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.clientsService.findOne(+id);
+  async findOne(@Param("id", new ParseUUIDPipe()) id: string) {
+    return await this.clientsService.findOne(id);
   }
 
-  @Patch(":id")
-  update(@Param("id") id: string, @Body() updateClientDto: UpdateClientDto) {
-    return this.clientsService.update(+id, updateClientDto);
+  @Put(":id")
+  async update(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() updateClientDto: UpdateClientDto,
+  ) {
+    return await this.clientsService.update(id, updateClientDto);
   }
-
-  @Delete(":id")
-  remove(@Param("id") id: string) {
-    return this.clientsService.remove(+id);
-  }
-}*/
+}
