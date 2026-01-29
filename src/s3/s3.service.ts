@@ -22,6 +22,12 @@ export class S3Service {
       Body: buffer,
       ContentType: contentType,
     });
-    return await this.s3ClientService.send(newUpload);
+    try {
+      await this.s3ClientService.send(newUpload);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (e) {
+      return false;
+    }
+    return true;
   }
 }

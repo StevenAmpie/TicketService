@@ -38,9 +38,4 @@ export class CreateAgentDto {
     message: "La contraseña no puede estar vacía",
   })
   password: string;
-
-  @IsNotEmpty({
-    message: "Debe incluir una foto de perfil",
-  })
-  picture: string;
 }

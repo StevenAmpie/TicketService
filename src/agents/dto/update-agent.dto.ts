@@ -1,4 +1,6 @@
-import { PartialType } from "@nestjs/mapped-types";
+import { OmitType, PartialType } from "@nestjs/mapped-types";
 import { CreateAgentDto } from "./create-agent.dto";
 
-export class UpdateAgentDto extends PartialType(CreateAgentDto) {}
+export class UpdateAgentDto extends PartialType(
+  OmitType(CreateAgentDto, ["email"]),
+) {}

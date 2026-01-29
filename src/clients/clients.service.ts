@@ -6,17 +6,31 @@ import { Client } from "./entities/client.entity";
 import { Not, Repository } from "typeorm";
 import { hashPassword } from "../helpers/hashPassword";
 import type { Express } from "express";
-import { S3Bucket } from "../s3/s3-bucket";
-import { S3Service } from "../s3/s3.service";
+import { ConfigService } from "@nestjs/config";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { extname } from "path";
+import { randomUUID } from "crypto";
 
 @Injectable()
 export class ClientsService {
+  private clientS3: S3Client;
+  private bucket: string;
+
   constructor(
     @InjectRepository(Client)
     private readonly clientsRepository: Repository<Client>,
-    private s3Bucket: S3Bucket,
-    private s3Service: S3Service,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.clientS3 = new S3Client({
+      region: configService.getOrThrow("AWS_REGION"),
+      credentials: {
+        accessKeyId: configService.getOrThrow("AWS_ACCESS_KEY_ID"),
+        secretAccessKey: configService.getOrThrow("AWS_SECRET_ACCESS_KEY"),
+      },
+    });
+    this.bucket = this.configService.getOrThrow<string>("AWS_S3_BUCKET_NAME");
+  }
+
   async create(createClientDto: CreateClientDto, file: Express.Multer.File) {
     const exceptions: string[] = [];
     const clientUsername = await this.clientsRepository.findOneBy({
@@ -39,13 +53,20 @@ export class ClientsService {
     }
 
     // toDo: create and added sign url.
-    await this.s3Service.upload({
-      key: this.s3Bucket.generateUrlKey(file),
-      buffer: this.s3Bucket.readFileBuffer(file),
-      contentType: this.s3Bucket.fileMimeType(file),
+
+    const urlKey = `${randomUUID()}${extname(file.originalname)}`;
+
+    const newImage = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: urlKey,
+      Body: file.buffer,
+      ContentType: file.mimetype,
     });
+
+    await this.clientS3.send(newImage);
+
     createClientDto["password"] = await hashPassword(createClientDto.password);
-    createClientDto["picture"] = this.s3Bucket.urlKey;
+    createClientDto["picture"] = urlKey;
     const newClient = this.clientsRepository.create(createClientDto);
     return await this.clientsRepository.save(newClient);
   }

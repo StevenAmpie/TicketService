@@ -31,10 +31,10 @@ export class S3Bucket {
   public get urlKey(): string {
     return this.s3UrlKey;
   }
-  public get buffer() {
+  public get buffer(): Buffer {
     return this.fileBuffer;
   }
-  public get mimeType() {
+  public get mimeType(): string {
     return this.fileContentType;
   }
 }
