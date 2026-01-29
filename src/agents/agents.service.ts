@@ -3,16 +3,22 @@ import { CreateAgentDto } from "./dto/create-agent.dto";
 import { UpdateAgentDto } from "./dto/update-agent.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Agent } from "node:http";
-import { DeepPartial, QueryDeepPartialEntity, Repository } from "typeorm";
+import { DeepPartial, Repository } from "typeorm";
 import { UUID } from "node:crypto";
-
+import type { Express } from "express";
+import { S3Service } from "../s3/s3.service";
+import { S3Bucket } from "../s3/s3-bucket";
+import { hashPassword } from "../helpers/hashPassword";
+import comparePassword from "../helpers/comparePassword";
 @Injectable()
 export class AgentsService {
   constructor(
     @InjectRepository(Agent)
     private agentsRepository: Repository<Agent>,
+    private s3Service: S3Service,
+    private s3Bucket: S3Bucket,
   ) {}
-  async create(createAgentDto: CreateAgentDto) {
+  async create(createAgentDto: CreateAgentDto, file: Express.Multer.File) {
     const agent = await this.agentsRepository
       .createQueryBuilder("agent")
       .where("agent.email = :email", { email: createAgentDto.email })
@@ -23,6 +29,16 @@ export class AgentsService {
         HttpStatus.BAD_REQUEST,
       );
     }
+    const fileWasUploaded = await this.s3Service.upload({
+      key: this.s3Bucket.generateUrlKey(file),
+      buffer: this.s3Bucket.readFileBuffer(file),
+      contentType: this.s3Bucket.fileMimeType(file),
+    });
+    if (!fileWasUploaded) {
+      throw new HttpException("Ocurrió un error", HttpStatus.CONFLICT);
+    }
+    createAgentDto["password"] = await hashPassword(createAgentDto["password"]);
+    createAgentDto["picture"] = this.s3Bucket.urlKey;
     const newAgent = this.agentsRepository.create(
       createAgentDto as DeepPartial<Agent>,
     );
@@ -30,29 +46,20 @@ export class AgentsService {
     return { success: true, message: "Operador creado exitosamente" };
   }
 
-  // async login(email: string, password: string) {
-  //   const foundAgent = await this.agentsRepository
-  //     .createQueryBuilder("agent")
-  //     .where("agent.email = :email", { email })
-  //     .getOne();
-  //   if (!foundAgent) {
-  //     throw new HttpException(
-  //       "El correo electrónico o contraseña incorrectos",
-  //       HttpStatus.NOT_FOUND,
-  //     );
-  //   }
-  //   // compare password hash
-  //   if (foundAgent["password"] !== password) {
-  //     throw new HttpException(
-  //       "El correo electrónico o contraseña incorrectos",
-  //       HttpStatus.NOT_FOUND,
-  //     );
-  //   }
-  //   return "JWT Token y creación de refresh token";
-  // }
-
   async findAll() {
-    return await this.agentsRepository.find();
+    const rawAgents = await this.agentsRepository.find();
+    if (!rawAgents) {
+      throw new HttpException(
+        "No hay operadores por el momento",
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    const filteredAgents: Agent[] = [];
+    for (const agent of rawAgents) {
+      //delete agent["password"];
+      filteredAgents.push(agent);
+    }
+    return filteredAgents;
   }
 
   async findOne(id: UUID) {
@@ -68,25 +75,41 @@ export class AgentsService {
   }
 
   async update(id: UUID, updateAgentDto: UpdateAgentDto) {
-    const findAgent = await this.findOne(id);
-    if (!findAgent) {
-      throw new HttpException("No encontré nada LOL", HttpStatus.NOT_FOUND);
+    const foundAgent = await this.agentsRepository
+      .createQueryBuilder("agent")
+      .where("agent.id = :id", { id })
+      .getOne();
+
+    if (!foundAgent) {
+      throw new HttpException(
+        "Ocurrió un error, intente nuevamente",
+        HttpStatus.NOT_FOUND,
+      );
     }
-    const updateAgent = await this.agentsRepository.update(
-      id,
-      updateAgentDto as QueryDeepPartialEntity<Agent>,
+    const agentPassword: string = foundAgent["password"] as string;
+
+    if (updateAgentDto["password"]) {
+      if (
+        await comparePassword({
+          dtoPassword: updateAgentDto["password"],
+          dbPassword: agentPassword,
+        })
+      ) {
+        throw new HttpException(
+          "Su contraseña no puede ser igual a la anterior",
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      updateAgentDto["password"] = await hashPassword(
+        updateAgentDto["password"],
+      );
+    }
+    const updateAgent = this.agentsRepository.merge(
+      foundAgent,
+      updateAgentDto as DeepPartial<Agent>,
     );
-    if (!updateAgent) {
-      return {
-        success: false,
-        message: "Los datos ingresados no cumplen con el formato correcto",
-      };
-    }
-    return {
-      success: true,
-      message: "Credenciales actualizadas exitosamente",
-    };
+    const updatedAgent = await this.agentsRepository.save(updateAgent);
+    delete updatedAgent["password"];
+    return updatedAgent;
   }
-
 }
-
