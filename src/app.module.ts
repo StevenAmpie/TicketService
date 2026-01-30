@@ -3,9 +3,6 @@ import { AuthModule } from "./auth/auth.module";
 import { ConfigModule } from "@nestjs/config";
 import { AgentsModule } from "./agents/agents.module";
 import { ClientsModule } from "./clients/clients.module";
-import { TicketsModule } from "./tickets/tickets.module";
-import { CommentsModule } from "./comments/comments.module";
-import { TicketsCasesModule } from "./tickets-cases/tickets-cases.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { S3Module } from "./s3/s3.module";
 import awsConfig from "./config/aws.config";
@@ -29,9 +26,6 @@ import awsConfig from "./config/aws.config";
     AuthModule,
     AgentsModule,
     ClientsModule,
-    TicketsModule,
-    CommentsModule,
-    TicketsCasesModule,
     S3Module,
   ],
   controllers: [],
