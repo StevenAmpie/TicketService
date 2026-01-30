@@ -17,15 +17,14 @@ RETURNS TRIGGER AS $$
 BEGIN
         IF NEW.status = 'processed'
             THEN
-UPDATE "Tickets"
-SET "closedAt" = NOW() WHERE id = NEW."ticketId";
-RETURN NULL;
+                NEW."closedAt" := NOW();
+RETURN NEW;
 END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER t_changeTicketStatusToProcessed
-    AFTER UPDATE ON "Tickets"
+    BEFORE UPDATE ON "Tickets"
     FOR EACH ROW
     EXECUTE FUNCTION updateClosedAt();
 

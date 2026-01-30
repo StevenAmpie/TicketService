@@ -22,7 +22,7 @@ export class CreateAgentDto {
   )
   dateOfBirth: Date;
 
-  @Matches(/^[A-Za-z][A-Za-z0-9._]*@megatech\.org$/, {
+  @Matches(/^[A-Za-z][A-Za-z0-9.]*@megatech\.org$/, {
     message: "El correo electrónico debe pertenecer al dominio de Megatech",
   })
   @MaxLength(50, {
