@@ -1,6 +1,6 @@
-import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Ticket } from "../../tickets/entities/ticket.entity";
-import { Comment } from "../../comments/entities/comment.entity";
+import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
+// import { Ticket } from "../../tickets/entities/ticket.entity";
+// import { Comment } from "../../comments/entities/comment.entity";
 
 @Entity("Agents")
 export class Agent {
@@ -50,8 +50,8 @@ export class Agent {
   })
   role: string;
 
-  @OneToMany(() => Comment, comment => comment.agentId)
-  comment: Comment[];
-  @OneToMany(() => Ticket, ticket => ticket.id)
-  tickets: Ticket[];
+  // @OneToMany(() => Comment, comment => comment.agentId)
+  // comment: Comment[];
+  // @OneToMany(() => Ticket, ticket => ticket.id)
+  // tickets: Ticket[];
 }
