@@ -7,7 +7,7 @@ CREATE TABLE "Clients" (
                            picture TEXT NOT NULL,
                            role CHAR(6) DEFAULT 'client' NOT NULL,
                            CONSTRAINT ck_clients_role CHECK (role in ('client')),
-                           CONSTRAINT ck_clients_email CHECK (email !~* '^[A-Za-z][A-Za-z0-9.]@megatech\.org$' AND email ~ '^[A-Za-z][A-Za-z0-9.]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+                           CONSTRAINT ck_clients_email CHECK (email !~* '^[A-Za-z][A-Za-z0-9.]*@megatech\.org$' AND email ~ '^[A-Za-z][A-Za-z0-9.]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
     );
 
 CREATE TABLE "Agents" (
@@ -19,7 +19,7 @@ CREATE TABLE "Agents" (
                           picture TEXT NOT NULL,
                           role CHAR(5) DEFAULT 'agent' NOT NULL,
                           CONSTRAINT ck_agents_role CHECK (role in ('agent')),
-                          CONSTRAINT ck_clients_email CHECK (email ~* '^[A-Za-z][A-Za-z0-9._]*@megatech\.org$')
+                          CONSTRAINT ck_clients_email CHECK (email ~* '^[A-Za-z][A-Za-z0-9.]*@megatech\.org$')
     );
 
 CREATE TABLE "Tickets" (

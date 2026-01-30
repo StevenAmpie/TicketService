@@ -2,8 +2,8 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { CreateAgentDto } from "./dto/create-agent.dto";
 import { UpdateAgentDto } from "./dto/update-agent.dto";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Agent } from "node:http";
-import { DeepPartial, Repository } from "typeorm";
+import { Agent } from "./entities/agent.entity";
+import { Repository } from "typeorm";
 import { UUID } from "node:crypto";
 import type { Express } from "express";
 import { S3Service } from "../s3/s3.service";
@@ -29,8 +29,9 @@ export class AgentsService {
         HttpStatus.BAD_REQUEST,
       );
     }
+    const urlKey = this.s3Bucket.generateUrlKey(file);
     const fileWasUploaded = await this.s3Service.upload({
-      key: this.s3Bucket.generateUrlKey(file),
+      key: urlKey,
       buffer: this.s3Bucket.readFileBuffer(file),
       contentType: this.s3Bucket.fileMimeType(file),
     });
@@ -38,17 +39,15 @@ export class AgentsService {
       throw new HttpException("Ocurrió un error", HttpStatus.CONFLICT);
     }
     createAgentDto["password"] = await hashPassword(createAgentDto["password"]);
-    createAgentDto["picture"] = this.s3Bucket.urlKey;
-    const newAgent = this.agentsRepository.create(
-      createAgentDto as DeepPartial<Agent>,
-    );
+    createAgentDto["picture"] = urlKey;
+    const newAgent = this.agentsRepository.create(createAgentDto);
     await this.agentsRepository.save(newAgent);
     return { success: true, message: "Operador creado exitosamente" };
   }
 
   async findAll() {
     const rawAgents = await this.agentsRepository.find();
-    if (!rawAgents) {
+    if (!rawAgents.length) {
       throw new HttpException(
         "No hay operadores por el momento",
         HttpStatus.NOT_FOUND,
@@ -56,7 +55,8 @@ export class AgentsService {
     }
     const filteredAgents: Agent[] = [];
     for (const agent of rawAgents) {
-      //delete agent["password"];
+      // @ts-expect-error fkn ts, for some reason i can't use the delete keyword
+      delete agent["password"];
       filteredAgents.push(agent);
     }
     return filteredAgents;
@@ -70,8 +70,9 @@ export class AgentsService {
     if (!agent) {
       throw new HttpException("No encontré nada LOL", HttpStatus.NOT_FOUND);
     }
-    delete agent["password"];
-    return agent;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...filteredAgent } = agent;
+    return filteredAgent;
   }
 
   async update(id: UUID, updateAgentDto: UpdateAgentDto) {
@@ -86,12 +87,12 @@ export class AgentsService {
         HttpStatus.NOT_FOUND,
       );
     }
-    const agentPassword: string = foundAgent["password"] as string;
+    const agentPassword: string = foundAgent.password;
 
-    if (updateAgentDto["password"]) {
+    if (updateAgentDto.password) {
       if (
         await comparePassword({
-          dtoPassword: updateAgentDto["password"],
+          dtoPassword: updateAgentDto.password,
           dbPassword: agentPassword,
         })
       ) {
@@ -100,16 +101,12 @@ export class AgentsService {
           HttpStatus.BAD_REQUEST,
         );
       }
-      updateAgentDto["password"] = await hashPassword(
-        updateAgentDto["password"],
-      );
+      updateAgentDto.password = await hashPassword(updateAgentDto.password);
     }
-    const updateAgent = this.agentsRepository.merge(
-      foundAgent,
-      updateAgentDto as DeepPartial<Agent>,
-    );
+    const updateAgent = this.agentsRepository.merge(foundAgent, updateAgentDto);
     const updatedAgent = await this.agentsRepository.save(updateAgent);
-    delete updatedAgent["password"];
-    return updatedAgent;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...filteredAgent } = updatedAgent;
+    return filteredAgent;
   }
 }
