@@ -19,6 +19,12 @@ export class AgentsService {
     private s3Bucket: S3Bucket,
   ) {}
   async create(createAgentDto: CreateAgentDto, file: Express.Multer.File) {
+    if (!file) {
+      throw new HttpException(
+        "Debe suministrar una foto de perfil",
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     const agent = await this.agentsRepository
       .createQueryBuilder("agent")
       .where("agent.email = :email", { email: createAgentDto.email })
@@ -46,20 +52,15 @@ export class AgentsService {
   }
 
   async findAll() {
-    const rawAgents = await this.agentsRepository.find();
-    if (!rawAgents.length) {
+    const agents = await this.agentsRepository.find();
+    if (!agents.length) {
       throw new HttpException(
         "No hay operadores por el momento",
         HttpStatus.NOT_FOUND,
       );
     }
-    const filteredAgents: Agent[] = [];
-    for (const agent of rawAgents) {
-      // @ts-expect-error fkn ts, for some reason i can't use the delete keyword
-      delete agent["password"];
-      filteredAgents.push(agent);
-    }
-    return filteredAgents;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return agents.map(({ password, ...filteredAgents }) => filteredAgents);
   }
 
   async findOne(id: UUID) {
