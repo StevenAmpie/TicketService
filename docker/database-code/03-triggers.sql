@@ -18,8 +18,8 @@ BEGIN
         IF NEW.status = 'processed'
             THEN
                 NEW."closedAt" := NOW();
+        END IF;
 RETURN NEW;
-END IF;
 END;
 $$ LANGUAGE plpgsql;
 
