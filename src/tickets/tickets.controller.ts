@@ -36,12 +36,22 @@ export class TicketsController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: UUID, @Body() updateTicketDto: UpdateTicketDto) {
-    return this.ticketsService.update(id, updateTicketDto);
+  @UseInterceptors(FileInterceptor("file"))
+  modify(
+    @Param("id") id: UUID,
+    @Body() updateTicketDto: UpdateTicketDto,
+    file: Express.Multer.File,
+  ) {
+    return this.ticketsService.modify(id, updateTicketDto, file);
+  }
+
+  @Patch("/process/:id")
+  process(@Param("id") id: UUID) {
+    return this.ticketsService.process(id);
   }
 
   @Delete(":id")
-  remove(@Param("id") id: UUID) {
-    return this.ticketsService.remove(id);
+  eliminate(@Param("id") id: UUID) {
+    return this.ticketsService.eliminate(id);
   }
 }
