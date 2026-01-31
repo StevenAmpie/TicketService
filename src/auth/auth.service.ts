@@ -78,9 +78,6 @@ export class AuthService {
     const refreshTokens = await this.refreshTokenRepository.findBy({
       userId: userId,
     });
-    if (!refreshTokens) {
-      return null;
-    }
 
     for (const refreshToken of refreshTokens) {
       if (await compare(token, refreshToken.token)) {
