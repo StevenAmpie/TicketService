@@ -59,8 +59,7 @@ CREATE TABLE "TicketsCases" (
 );
 
 CREATE TABLE "RefreshTokens" (
-                                 id TEXT CONSTRAINT pk_refreshTokens PRIMARY KEY,
-                                 "clientId" UUID NOT NULL,
-                                 "expiresAt" BIGINT NOT NULL,
-                                 CONSTRAINT fk_refreshTokens FOREIGN KEY ("clientId") REFERENCES "Clients"(id)
-);
+    id UUID CONSTRAINT pk_refreshTokens PRIMARY KEY DEFAULT gen_random_uuid(),
+    token TEXT NOT NULL,
+    "userId" UUID NOT NULL,
+    "expiresAt" BIGINT NOT NULL);
