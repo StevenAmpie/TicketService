@@ -6,15 +6,16 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { Client } from "src/clients/entities/client.entity";
 import { JwtModule } from "@nestjs/jwt";
 import { LocalStrategy } from "./strategies/local.strategie";
-import { ConfigService } from "@nestjs/config";
+import { ConfigModule } from "@nestjs/config";
 import { JwtStrategy } from "./strategies/jwt.strategie";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([RefreshToken, Client]),
     JwtModule.register({}),
+    ConfigModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, ConfigService],
+  providers: [AuthService, LocalStrategy, JwtStrategy],
 })
 export class AuthModule {}
