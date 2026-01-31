@@ -1,5 +1,4 @@
-import { Column, Entity, OneToOne, JoinColumn, PrimaryColumn } from "typeorm";
-import { Client } from "../../clients/entities/client.entity";
+import { Column, Entity, PrimaryColumn } from "typeorm";
 
 @Entity("RefreshTokens")
 export class RefreshToken {
@@ -7,11 +6,18 @@ export class RefreshToken {
   id: string;
 
   @Column({
-    name: "clientId",
+    name: "userId",
     type: "uuid",
     nullable: false,
   })
-  clientId: string;
+  userId: string;
+
+  @Column({
+    name: "token",
+    type: "text",
+    nullable: false,
+  })
+  token: string;
 
   @Column({
     name: "expiresAt",
@@ -19,8 +25,4 @@ export class RefreshToken {
     nullable: false,
   })
   expiresAt: string;
-
-  @OneToOne(() => Client, client => client.id)
-  @JoinColumn()
-  client: Client;
 }
