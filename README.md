@@ -1,5 +1,6 @@
 # TICKET SERVICE
 [![NPM Version](https://img.shields.io/npm/v/@nestjs/core.svg)](https://www.npmjs.com/~nestjscore)
+[![DeepScan grade](https://deepscan.io/api/teams/28952/projects/30992/branches/1001051/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=28952&pid=30992&bid=1001051)
 
 
 ## Authors
