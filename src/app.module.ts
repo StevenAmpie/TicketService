@@ -5,6 +5,7 @@ import { AgentsModule } from "./agents/agents.module";
 import { ClientsModule } from "./clients/clients.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { S3Module } from "./s3/s3.module";
+import { TicketsModule } from "./tickets/tickets.module";
 import awsConfig from "./config/aws.config";
 import jwtConfig from "./config/jwt.config";
 
@@ -28,6 +29,7 @@ import jwtConfig from "./config/jwt.config";
     AgentsModule,
     ClientsModule,
     S3Module,
+    TicketsModule,
   ],
   controllers: [],
 })

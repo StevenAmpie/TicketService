@@ -12,12 +12,16 @@ CREATE TRIGGER t_changeTicketStatusToProcessing
     FOR EACH ROW
     EXECUTE FUNCTION changeTicketStatusToProcessing();
 
-CREATE OR REPLACE FUNCTION updateClosedAt()
+CREATE OR REPLACE FUNCTION updateClosedOrEliminatedAt()
 RETURNS TRIGGER AS $$
 BEGIN
         IF NEW.status = 'processed'
             THEN
                 NEW."closedAt" := NOW();
+        END IF;
+        IF NEW.status = 'eliminated'
+           THEN
+                NEW."eliminatedAt" := NOW();
         END IF;
 RETURN NEW;
 END;
@@ -26,7 +30,7 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER t_changeTicketStatusToProcessed
     BEFORE UPDATE ON "Tickets"
     FOR EACH ROW
-    EXECUTE FUNCTION updateClosedAt();
+    EXECUTE FUNCTION updateClosedOrEliminatedAt();
 
 
 CREATE OR REPLACE FUNCTION checkForTwoNulls()

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   HttpException,
   HttpStatus,
@@ -12,6 +13,8 @@ import { Ticket } from "./entities/ticket.entity";
 import { UUID } from "node:crypto";
 import type { Express } from "express";
 import { Repository } from "typeorm";
+import { S3Bucket } from "../s3/s3-bucket";
+import { S3Service } from "../s3/s3.service";
 
 type role = "agent" | "client";
 @Injectable()
@@ -19,18 +22,29 @@ export class TicketsService {
   constructor(
     @InjectRepository(Ticket)
     private ticketsRepository: Repository<Ticket>,
+    private s3Service: S3Service,
+    private s3Bucket: S3Bucket,
   ) {}
 
   async create(createTicketDto: CreateTicketDto, file: Express.Multer.File) {
-    const mockedClientId: UUID = "26f559a6-7ad2-4127-a825-813e75cbd39f";
-    // inject s3 Bucket and Service
-    // get clientId
-    // upload image to s3
-    // attach clientId and s3 key to ticket instance
+    // inject s3 Bucket and Service -> check
+    // get clientId -> mock value for now
+    // upload image to s3 -> check
+    // attach clientId and s3 key to ticket instance -> mock value for now
     // create -> check
     // save -> check
-    const urlKey = "url generated for s3";
-
+    const mockedClientId: UUID = "26f559a6-7ad2-4127-a825-813e75cbd39f";
+    if (!file) {
+      throw new BadRequestException(
+        "Para crear un ticket necesita suministrar una foto",
+      );
+    }
+    const urlKey = this.s3Bucket.generateUrlKey(file);
+    await this.s3Service.upload({
+      key: urlKey,
+      buffer: this.s3Bucket.readFileBuffer(file),
+      contentType: this.s3Bucket.fileMimeType(file),
+    });
     const newTicket = this.ticketsRepository.create({
       title: createTicketDto.title,
       detail: createTicketDto.detail,
@@ -46,13 +60,14 @@ export class TicketsService {
     if (!allTickets.length) {
       throw new NotFoundException("No hay tickets por el momento");
     }
-    //hacer validación con el rol del payload JWT
+    //add validation with JWT payload role
     // Id, title, detail, status, date -> no picture, closedAt, clientId
-    if (mockRoles === "agent") {
+    if (mockRoles !== "agent") {
       const filteredClientTickets = allTickets.filter(ticket => {
         return ticket.status === "opened" || ticket.status === "processing";
       });
       return filteredClientTickets.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ({ picture, closedAt, clientId, ...frontendData }) => {
           return frontendData;
         },
@@ -62,6 +77,7 @@ export class TicketsService {
       return ticket.status === "opened";
     });
     return filteredAgentTickets.map(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       ({ picture, closedAt, clientId, ...frontendData }) => {
         return frontendData;
       },
@@ -84,26 +100,56 @@ export class TicketsService {
     return ticket;
   }
 
-  async update(id: UUID, updateTicketDto: UpdateTicketDto) {
-    // role base behavior. Clients can only update a ticket when it's in 'opened' status
-    // Agents can change the status of the ticket 'processed'
-    // For Agents: their interaction with the endpoint is only to change the status
+  async modify(
+    id: UUID,
+    updateTicketDto: UpdateTicketDto,
+    file: Express.Multer.File,
+  ) {
+    // A Client only endpoint
+    // query the ticket with the param id -> check
+    // if the ticket not found throw a Not Found Exception -> check
+    // if we have a file, update the picture in S3
+    // merge the DTO with the found Ticket -> check
     const ticket = await this.findOne(id);
-    const mockRole: role = "agent";
-    if (mockRole === "agent") {
-      updateTicketDto["status"] = "processed";
-    } else {
-      // For Clients: only title, detail and picture can be updated
-      // s3 update logic
+    if (file) {
+      // write S3 update logic
     }
     const updatedTicket = this.ticketsRepository.merge(ticket, updateTicketDto);
     await this.ticketsRepository.save(updatedTicket);
     return { success: true, message: "El ticket fue actualizado exitosamente" };
   }
 
-  async remove(id: UUID) {
-    // use this endpoint for soft delete
-    // only accessible for clients?
+  async process(id: UUID) {
+    // An Agent only endpoint
+    // query the ticket with the param id -> check
+    // if the ticket not found throw a Not Found Exception -> check
+    // check ticket status -> check
+    // if ticket status is not 'processing' throw an Exception -> check
+    // update ticket status to 'processed' -> check
+    // return a success message -> check
+    const ticket = await this.findOne(id);
+    if (ticket.status !== "processing") {
+      throw new ConflictException(
+        "No puede finalizar un ticket que no se está procesando",
+      );
+    }
+    const updateTicket = await this.ticketsRepository.update(id, {
+      status: "processed",
+    });
+    if (!updateTicket.affected) {
+      throw new ConflictException("Ocurrió un error inesperado");
+    }
+    return { success: true, message: "El ticket fue procesado exitosamente" };
+  }
+
+  async eliminate(id: UUID) {
+    // A Client only endpoint
+    // query the ticket with the param id -> check
+    // if the ticket not found throw a Not Found Exception -> check
+    // check if ticket status is not opened throw an Exception -> check
+    // update ticket status to 'eliminated' -> check
+    // if update not successful throw an Exception -> check
+    // return a success message -> check
     const ticket = await this.findOne(id);
     if (ticket.status !== "opened") {
       throw new ConflictException(
@@ -114,10 +160,7 @@ export class TicketsService {
       status: "eliminated",
     });
     if (!removedTicket.affected) {
-      return {
-        success: false,
-        message: "Ocurrió algo inesperado, intente nuevamente",
-      };
+      throw new ConflictException("Ocurrió un error inesperado");
     }
     return { success: true, message: "El ticket fue eliminado exitosamente" };
   }

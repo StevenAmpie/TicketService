@@ -29,6 +29,7 @@ CREATE TABLE "Tickets" (
                            picture TEXT NOT NULL,
                            "openedAt" TIMESTAMPTZ(0) DEFAULT NOW() NOT NULL,
                            "closedAt" TIMESTAMPTZ(0) DEFAULT NULL,
+                           "eliminatedAt" TIMESTAMPTZ(0) DEFAULT NULL,
                            status VARCHAR(10) NOT NULL DEFAULT 'opened',
                            "clientId" UUID NOT NULL,
                            CONSTRAINT ck_tickets_status CHECK(status in('opened', 'processing', 'processed', 'eliminated')),
