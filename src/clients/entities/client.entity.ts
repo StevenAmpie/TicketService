@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm";
 import { Comment } from "../../comments/entities/comment.entity";
-// import { Ticket } from "../../tickets/entities/ticket.entity";
+import { Ticket } from "../../tickets/entities/ticket.entity";
 
 @Entity("Clients")
 export class Client {
@@ -52,6 +52,6 @@ export class Client {
 
   @OneToMany(() => Comment, comment => comment.clientId)
   comment: Comment[];
-  // @OneToMany(() => Ticket, ticket => ticket.clientId)
-  // tickets: Ticket[];
+  @OneToMany(() => Ticket, ticket => ticket.clientId)
+  tickets: Ticket[];
 }
