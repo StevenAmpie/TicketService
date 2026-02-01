@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   PrimaryGeneratedColumn,
 } from "typeorm";
-// import { Comment } from "../../comments/entities/comment.entity";
+import { Comment } from "../../comments/entities/comment.entity";
 import { Agent } from "../../agents/entities/agent.entity";
 
 @Entity("Tickets")
@@ -61,8 +61,8 @@ export class Ticket {
   })
   clientId: string;
 
-  // @OneToMany(() => Comment, comment => comment.ticketId)
-  // comments: Comment[];
+  @OneToMany(() => Comment, comment => comment.ticketId)
+  comments: Comment[];
 
   @OneToMany(() => Agent, agent => agent.id)
   agents: Agent[];
