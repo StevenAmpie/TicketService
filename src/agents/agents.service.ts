@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 import { CreateAgentDto } from "./dto/create-agent.dto";
 import { UpdateAgentDto } from "./dto/update-agent.dto";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -19,12 +25,6 @@ export class AgentsService {
     private s3Bucket: S3Bucket,
   ) {}
   async create(createAgentDto: CreateAgentDto, file: Express.Multer.File) {
-    if (!file) {
-      throw new HttpException(
-        "Debe suministrar una foto de perfil",
-        HttpStatus.BAD_REQUEST,
-      );
-    }
     const agent = await this.agentsRepository
       .createQueryBuilder("agent")
       .where("agent.email = :email", { email: createAgentDto.email })
@@ -76,7 +76,16 @@ export class AgentsService {
     return filteredAgent;
   }
 
-  async update(id: UUID, updateAgentDto: UpdateAgentDto) {
+  async update(
+    id: UUID,
+    updateAgentDto: UpdateAgentDto,
+    file: Express.Multer.File,
+  ) {
+    if (!Object.keys(updateAgentDto).length && !file) {
+      throw new UnprocessableEntityException(
+        "Necesitar actualizar algún campo",
+      );
+    }
     const foundAgent = await this.agentsRepository
       .createQueryBuilder("agent")
       .where("agent.id = :id", { id })
@@ -89,7 +98,6 @@ export class AgentsService {
       );
     }
     const agentPassword: string = foundAgent.password;
-
     if (updateAgentDto.password) {
       if (
         await comparePassword({
@@ -103,6 +111,18 @@ export class AgentsService {
         );
       }
       updateAgentDto.password = await hashPassword(updateAgentDto.password);
+    }
+    if (file) {
+      const newUrlKey = await this.s3Service.updateFile({
+        newFile: file,
+        oldKey: foundAgent.picture,
+      });
+      if (!newUrlKey) {
+        throw new ConflictException(
+          "Problema de conexión con el servidor, intente nuevamente",
+        );
+      }
+      updateAgentDto["picture"] = newUrlKey;
     }
     const updateAgent = this.agentsRepository.merge(foundAgent, updateAgentDto);
     const updatedAgent = await this.agentsRepository.save(updateAgent);
