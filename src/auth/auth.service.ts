@@ -23,26 +23,21 @@ export class AuthService {
     private readonly refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
-  async login(body: LoginDto) {
+  async login(loginData: LoginDto) {
     const secretkey: string = this.configService.getOrThrow("JWT_SECRET_KEY");
     const expiresTime: ExpiresIn =
       this.configService.getOrThrow("JWT_EXPIRES_IN");
-    const client = await this.client.findOneBy({ email: body.email });
-    if (!client) {
-      throw new UnauthorizedException([
-        "Correo Electrónico o contraseña incorrectos",
-      ]);
-    }
+
     const payload = {
-      sub: client.id,
-      username: client.username,
-      role: client.role,
+      sub: loginData.id,
+      username: loginData.username,
+      role: loginData.role,
     };
     const { refreshToken, refreshTokenHashed, refreshExpiresIn } =
       await generateRefreshToken();
 
     const newRefreshToken = this.refreshTokenRepository.create({
-      userId: client.id,
+      userId: loginData.id,
       token: refreshTokenHashed,
       expiresAt: refreshExpiresIn.toString(),
     });
@@ -65,6 +60,7 @@ export class AuthService {
       return {
         id: client.id,
         email: client.email,
+        password: password,
         username: client.username,
         role: client.role,
       };
@@ -130,6 +126,6 @@ export class AuthService {
 
     await this.refreshTokenRepository.delete(currentToken);
 
-    return "Token eliminado";
+    return "Sesión cerrada";
   }
 }
