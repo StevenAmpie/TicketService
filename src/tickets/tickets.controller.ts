@@ -7,6 +7,8 @@ import {
   Param,
   Delete,
   UseInterceptors,
+  UploadedFile,
+  ParseFilePipeBuilder,
 } from "@nestjs/common";
 import { TicketsService } from "./tickets.service";
 import { CreateTicketDto } from "./dto/create-ticket.dto";
@@ -20,9 +22,28 @@ export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor("file"))
-  create(@Body() createTicketDto: CreateTicketDto, file: Express.Multer.File) {
+  @UseInterceptors(FileInterceptor("picture"))
+  create(
+    @Body() createTicketDto: CreateTicketDto,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /^image\/(jpe?g|png|gif|bmp|svg\+xml|webp|ico|tiff|avif)$/,
+          errorMessage:
+            "Los formatos de imagen permitidos son jpg, jpeg, png, gif, bmp, svg, webp, ico, tiff y avif",
+        })
+        .build({
+          fileIsRequired: true,
+        }),
+    )
+    file: Express.Multer.File,
+  ) {
     return this.ticketsService.create(createTicketDto, file);
+  }
+
+  @Post("/assign/:id")
+  assignTicket(@Param("id") id: UUID) {
+    return this.ticketsService.assignTicket(id);
   }
 
   @Get()
@@ -36,10 +57,21 @@ export class TicketsController {
   }
 
   @Patch(":id")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("picture"))
   modify(
     @Param("id") id: UUID,
     @Body() updateTicketDto: UpdateTicketDto,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /^image\/(jpe?g|png|gif|bmp|svg\+xml|webp|ico|tiff|avif)$/,
+          errorMessage:
+            "Los formatos de imagen permitidos son jpg, jpeg, png, gif, bmp, svg, webp, ico, tiff y avif",
+        })
+        .build({
+          fileIsRequired: false,
+        }),
+    )
     file: Express.Multer.File,
   ) {
     return this.ticketsService.modify(id, updateTicketDto, file);

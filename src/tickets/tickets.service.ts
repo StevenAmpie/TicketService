@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from "@nestjs/common";
 import { CreateTicketDto } from "./dto/create-ticket.dto";
 import { UpdateTicketDto } from "./dto/update-ticket.dto";
@@ -15,6 +16,7 @@ import type { Express } from "express";
 import { Repository } from "typeorm";
 import { S3Bucket } from "../s3/s3-bucket";
 import { S3Service } from "../s3/s3.service";
+import { TicketCase } from "../tickets-cases/dto/create-ticket-case-dto";
 
 type role = "agent" | "client";
 @Injectable()
@@ -22,18 +24,15 @@ export class TicketsService {
   constructor(
     @InjectRepository(Ticket)
     private ticketsRepository: Repository<Ticket>,
+    @InjectRepository(TicketCase)
+    private ticketCaseRepository: Repository<TicketCase>,
     private s3Service: S3Service,
     private s3Bucket: S3Bucket,
   ) {}
 
   async create(createTicketDto: CreateTicketDto, file: Express.Multer.File) {
-    // inject s3 Bucket and Service -> check
     // get clientId -> mock value for now
-    // upload image to s3 -> check
-    // attach clientId and s3 key to ticket instance -> mock value for now
-    // create -> check
-    // save -> check
-    const mockedClientId: UUID = "26f559a6-7ad2-4127-a825-813e75cbd39f";
+    const mockedClientId: UUID = "69b39bd1-09ec-4609-88c6-63ec966c7ffb"; // use custom client id for testing
     if (!file) {
       throw new BadRequestException(
         "Para crear un ticket necesita suministrar una foto",
@@ -52,6 +51,28 @@ export class TicketsService {
       clientId: mockedClientId,
     });
     return await this.ticketsRepository.save(newTicket);
+  }
+
+  async assignTicket(ticketId: UUID) {
+    const mockAgentId = "b42c5130-e645-4e23-aca7-81be88f79c73";
+    const hasBeenAssigned = await this.findOpenTicket(ticketId);
+    if (!hasBeenAssigned) {
+      throw new ConflictException(
+        "El ticket seleccionado ya le fue asignado a otro operador",
+      );
+    }
+    const assignedTicket = this.ticketCaseRepository.create({
+      agentId: mockAgentId,
+      ticketId,
+    });
+    const wasTicketAssigned =
+      await this.ticketCaseRepository.save(assignedTicket);
+    if (!wasTicketAssigned) {
+      throw new ConflictException(
+        "El ticket seleccionado ya le fue asignado a otro operador",
+      );
+    }
+    return { success: true, message: "Ticket asignado exitosamente" };
   }
 
   async findAll() {
@@ -84,6 +105,19 @@ export class TicketsService {
     );
   }
 
+  async findOpenTicket(id: UUID) {
+    const ticket = await this.ticketsRepository.findOne({
+      where: {
+        id: id,
+        status: "opened",
+      },
+    });
+    if (!ticket) {
+      return null;
+    }
+    return ticket;
+  }
+
   async findOne(id: UUID) {
     const ticket = await this.ticketsRepository.findOne({
       where: {
@@ -93,9 +127,9 @@ export class TicketsService {
     });
     if (!ticket) {
       throw new HttpException(
-        "No hay tickets por el momento",
+        "El ticket solicitado no está disponible",
         HttpStatus.CONFLICT,
-      ); // ask Steven about this, it is limited to processing status no?
+      );
     }
     return ticket;
   }
@@ -106,13 +140,23 @@ export class TicketsService {
     file: Express.Multer.File,
   ) {
     // A Client only endpoint
-    // query the ticket with the param id -> check
-    // if the ticket not found throw a Not Found Exception -> check
-    // if we have a file, update the picture in S3
-    // merge the DTO with the found Ticket -> check
+    if (!Object.keys(updateTicketDto).length && !file) {
+      throw new UnprocessableEntityException(
+        "Necesitar actualizar algún campo",
+      );
+    }
     const ticket = await this.findOne(id);
     if (file) {
-      // write S3 update logic
+      const newPictureKey = await this.s3Service.updateFile({
+        newFile: file,
+        oldKey: ticket.picture,
+      });
+      if (!newPictureKey) {
+        throw new ConflictException(
+          "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
+        );
+      }
+      updateTicketDto["picture"] = newPictureKey;
     }
     const updatedTicket = this.ticketsRepository.merge(ticket, updateTicketDto);
     await this.ticketsRepository.save(updatedTicket);
@@ -121,12 +165,6 @@ export class TicketsService {
 
   async process(id: UUID) {
     // An Agent only endpoint
-    // query the ticket with the param id -> check
-    // if the ticket not found throw a Not Found Exception -> check
-    // check ticket status -> check
-    // if ticket status is not 'processing' throw an Exception -> check
-    // update ticket status to 'processed' -> check
-    // return a success message -> check
     const ticket = await this.findOne(id);
     if (ticket.status !== "processing") {
       throw new ConflictException(
@@ -144,14 +182,8 @@ export class TicketsService {
 
   async eliminate(id: UUID) {
     // A Client only endpoint
-    // query the ticket with the param id -> check
-    // if the ticket not found throw a Not Found Exception -> check
-    // check if ticket status is not opened throw an Exception -> check
-    // update ticket status to 'eliminated' -> check
-    // if update not successful throw an Exception -> check
-    // return a success message -> check
-    const ticket = await this.findOne(id);
-    if (ticket.status !== "opened") {
+    const ticket = await this.findOpenTicket(id);
+    if (!ticket) {
       throw new ConflictException(
         "No puede eliminar un ticket que no está en el estado de abierto",
       );

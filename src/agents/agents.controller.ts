@@ -32,7 +32,7 @@ export class AgentsController {
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
-          fileType: /^image\/(jpe?g|png|gif|bmp|svg|webp|ico|tiff|avif)$/,
+          fileType: /^image\/(jpe?g|png|gif|bmp|svg\+xml|webp|ico|tiff|avif)$/,
           errorMessage:
             "Los formatos de imagen permitidos son jpg, jpeg, png, gif, bmp, svg, webp, ico, tiff y avif",
         })
@@ -64,7 +64,7 @@ export class AgentsController {
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
-          fileType: /^image\/(jpe?g|png|gif|bmp|svg|webp|ico|tiff|avif)$/,
+          fileType: /^image\/(jpe?g|png|gif|bmp|svg\+xml|webp|ico|tiff|avif)$/,
           errorMessage:
             "Los formatos de imagen permitidos son jpg, jpeg, png, gif, bmp, svg, webp, ico, tiff y avif",
         })
