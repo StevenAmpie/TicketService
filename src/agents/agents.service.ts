@@ -119,7 +119,7 @@ export class AgentsService {
       });
       if (!newUrlKey) {
         throw new ConflictException(
-          "Problema de conexión con el servidor, intente nuevamente",
+          "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
         );
       }
       updateAgentDto["picture"] = newUrlKey;

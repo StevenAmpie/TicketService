@@ -1,16 +1,16 @@
 import {
   Entity,
   Column,
-  PrimaryColumn,
   OneToMany,
   CreateDateColumn,
+  PrimaryGeneratedColumn,
 } from "typeorm";
 // import { Comment } from "../../comments/entities/comment.entity";
 import { Agent } from "../../agents/entities/agent.entity";
 
 @Entity("Tickets")
 export class Ticket {
-  @PrimaryColumn("uuid")
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column({
