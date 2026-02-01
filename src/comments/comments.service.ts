@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -27,6 +31,11 @@ export class CommentsService {
   }
 
   async create(comment: CreateCommentDto) {
+    if (!comment.agentId && !comment.clientId) {
+      throw new BadRequestException(
+        "El comentario debe estar asignado al menos a 1 usuario",
+      );
+    }
     const newComment = this.commentRepository.create({
       ...comment,
       publishedAt: new Date(),
