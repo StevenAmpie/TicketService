@@ -12,12 +12,11 @@ export class IsLegalPipe implements PipeTransform {
   transform(value: CreateClientDto, _metadata: ArgumentMetadata) {
     const isLegal = isLegalAge(value.dateOfBirth);
 
-    if (!isLegal) {
+    if (isLegal === false) {
       throw new BadRequestException(
         "Debes ser mayor de edad para tener una cuenta",
       );
     }
-
     return value;
   }
 }

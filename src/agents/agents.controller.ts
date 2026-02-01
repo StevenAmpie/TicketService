@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   UploadedFile,
   UseInterceptors,
+  ParseFilePipeBuilder,
 } from "@nestjs/common";
 import { AgentsService } from "./agents.service";
 import { CreateAgentDto } from "./dto/create-agent.dto";
@@ -25,10 +26,21 @@ export class AgentsController {
   constructor(private readonly agentsService: AgentsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("picture"))
   create(
     @Body(new IsLegalPipe()) createAgentDto: CreateAgentDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /^image\/(jpe?g|png|gif|bmp|svg|webp|ico|tiff|avif)$/,
+          errorMessage:
+            "Los formatos de imagen permitidos son jpg, jpeg, png, gif, bmp, svg, webp, ico, tiff y avif",
+        })
+        .build({
+          fileIsRequired: true,
+        }),
+    )
+    file: Express.Multer.File,
   ) {
     return this.agentsService.create(createAgentDto, file);
   }
@@ -45,11 +57,23 @@ export class AgentsController {
   }
 
   @Patch(":id")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("picture"))
   update(
     @Param("id", new ParseUUIDPipe()) id: UUID,
     @Body(new IsLegalPipe()) updateAgentDto: UpdateAgentDto,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /^image\/(jpe?g|png|gif|bmp|svg|webp|ico|tiff|avif)$/,
+          errorMessage:
+            "Los formatos de imagen permitidos son jpg, jpeg, png, gif, bmp, svg, webp, ico, tiff y avif",
+        })
+        .build({
+          fileIsRequired: false,
+        }),
+    )
+    file: Express.Multer.File,
   ) {
-    return this.agentsService.update(id, updateAgentDto);
+    return this.agentsService.update(id, updateAgentDto, file);
   }
 }
