@@ -9,6 +9,8 @@ import { TicketsModule } from "./tickets/tickets.module";
 import { CommentsModule } from "./comments/comments.module";
 import awsConfig from "./config/aws.config";
 import jwtConfig from "./config/jwt.config";
+import { APP_GUARD } from "@nestjs/core";
+import { RolesGuard } from "./guards/roles.guards";
 
 @Module({
   imports: [
@@ -34,5 +36,11 @@ import jwtConfig from "./config/jwt.config";
     CommentsModule,
   ],
   controllers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}
