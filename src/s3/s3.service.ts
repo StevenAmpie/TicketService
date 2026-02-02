@@ -1,12 +1,15 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   PutObjectCommand,
+  NoSuchKey,
   waitUntilObjectNotExists,
 } from "@aws-sdk/client-s3";
 import { S3Bucket } from "./s3-bucket";
 import { OurS3Client } from "./our-s3-Client";
 import type { Express } from "express";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 type UploadType = {
   key: string;
@@ -74,5 +77,23 @@ export class S3Service {
       return null;
     }
     return newKey;
+  }
+
+  async getOneSignedUrl(fileKey: string) {
+    try {
+      const fileObject = new GetObjectCommand({
+        Bucket: this.s3BucketClient.bucket,
+        Key: fileKey,
+      });
+      await this.s3ClientService.send(fileObject);
+      const signedUrl = await getSignedUrl(this.s3ClientService, fileObject, {
+        expiresIn: 3600,
+      });
+      return { url: signedUrl };
+    } catch (e: unknown) {
+      if (e instanceof NoSuchKey) {
+        throw new NotFoundException(e.message);
+      }
+    }
   }
 }
