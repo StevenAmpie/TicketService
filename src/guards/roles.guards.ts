@@ -2,7 +2,7 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  UnauthorizedException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Roles } from "../decorators/roles.decorator";
@@ -13,7 +13,10 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const roles = this.reflector.get(Roles, context.getHandler());
+    const roles = this.reflector.getAllAndOverride(Roles, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     if (!roles) {
       return true;
     }
@@ -22,7 +25,7 @@ export class RolesGuard implements CanActivate {
     const user: Client = request["user"];
     const match = matchRoles(roles, user.role);
     if (!match) {
-      throw new UnauthorizedException("No puede acceder a este recurso");
+      throw new ForbiddenException("No puede acceder a este recurso");
     }
     return match;
   }
