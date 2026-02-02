@@ -7,29 +7,18 @@ import { Not, Repository } from "typeorm";
 import { hashPassword } from "../helpers/hashPassword";
 import type { Express } from "express";
 import { ConfigService } from "@nestjs/config";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { extname } from "path";
-import { randomUUID } from "crypto";
+import { S3Bucket } from "src/s3/s3-bucket";
+import { S3Service } from "src/s3/s3.service";
 
 @Injectable()
 export class ClientsService {
-  private clientS3: S3Client;
-  private bucket: string;
-
   constructor(
     @InjectRepository(Client)
     private readonly clientsRepository: Repository<Client>,
     private readonly configService: ConfigService,
-  ) {
-    this.clientS3 = new S3Client({
-      region: configService.getOrThrow("AWS_REGION"),
-      credentials: {
-        accessKeyId: configService.getOrThrow("AWS_ACCESS_KEY_ID"),
-        secretAccessKey: configService.getOrThrow("AWS_SECRET_ACCESS_KEY"),
-      },
-    });
-    this.bucket = this.configService.getOrThrow<string>("AWS_S3_BUCKET_NAME");
-  }
+    private readonly s3Service: S3Service,
+    private readonly s3Bucket: S3Bucket,
+  ) {}
 
   async create(createClientDto: CreateClientDto, file: Express.Multer.File) {
     const exceptions: string[] = [];
@@ -52,18 +41,17 @@ export class ClientsService {
       throw new HttpException({ detail: exceptions }, HttpStatus.CONFLICT);
     }
 
-    // toDo: create and added sign url.
+    const urlKey = this.s3Bucket.generateUrlKey(file);
 
-    const urlKey = `${randomUUID()}${extname(file.originalname)}`;
-
-    const newImage = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: urlKey,
-      Body: file.buffer,
-      ContentType: file.mimetype,
+    const fileWasUploaded = await this.s3Service.upload({
+      key: urlKey,
+      buffer: this.s3Bucket.readFileBuffer(file),
+      contentType: this.s3Bucket.fileMimeType(file),
     });
 
-    await this.clientS3.send(newImage);
+    if (!fileWasUploaded) {
+      throw new HttpException("Ocurrió un error", HttpStatus.CONFLICT);
+    }
 
     createClientDto["password"] = await hashPassword(createClientDto.password);
     createClientDto["picture"] = urlKey;
