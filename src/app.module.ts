@@ -9,11 +9,13 @@ import { TicketsModule } from "./tickets/tickets.module";
 import { CommentsModule } from "./comments/comments.module";
 import awsConfig from "./config/aws.config";
 import jwtConfig from "./config/jwt.config";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_FILTER } from "@nestjs/core";
 import { RolesGuard } from "./guards/roles.guards";
+import { SentryModule, SentryGlobalFilter } from "@sentry/nestjs/setup";
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       load: [awsConfig, jwtConfig],
       isGlobal: true,
@@ -37,6 +39,10 @@ import { RolesGuard } from "./guards/roles.guards";
   ],
   controllers: [],
   providers: [
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
