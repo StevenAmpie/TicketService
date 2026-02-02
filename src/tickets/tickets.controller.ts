@@ -5,30 +5,26 @@ import {
   Body,
   Patch,
   Param,
-  UsePipes,
-  ValidationPipe,
-  ParseUUIDPipe,
-  UploadedFile,
+  Delete,
   UseInterceptors,
+  UploadedFile,
   ParseFilePipeBuilder,
 } from "@nestjs/common";
-import { AgentsService } from "./agents.service";
-import { CreateAgentDto } from "./dto/create-agent.dto";
-import { UpdateAgentDto } from "./dto/update-agent.dto";
-import type { UUID } from "node:crypto";
-import { IsLegalPipe } from "../clients/pipes/isLegal.pipe";
-import type { Express } from "express";
+import { TicketsService } from "./tickets.service";
+import { CreateTicketDto } from "./dto/create-ticket.dto";
+import { UpdateTicketDto } from "./dto/update-ticket.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
+import type { Express } from "express";
+import type { UUID } from "node:crypto";
 
-@Controller("agents")
-@UsePipes(new ValidationPipe({ transform: true }))
-export class AgentsController {
-  constructor(private readonly agentsService: AgentsService) {}
+@Controller("tickets")
+export class TicketsController {
+  constructor(private readonly ticketsService: TicketsService) {}
 
   @Post()
   @UseInterceptors(FileInterceptor("picture"))
   create(
-    @Body(new IsLegalPipe()) createAgentDto: CreateAgentDto,
+    @Body() createTicketDto: CreateTicketDto,
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
@@ -42,25 +38,29 @@ export class AgentsController {
     )
     file: Express.Multer.File,
   ) {
-    return this.agentsService.create(createAgentDto, file);
+    return this.ticketsService.create(createTicketDto, file);
+  }
+
+  @Post("/assign/:id")
+  assignTicket(@Param("id") id: UUID) {
+    return this.ticketsService.assignTicket(id);
   }
 
   @Get()
-  async findAll() {
-    const allAgents = await this.agentsService.findAll();
-    return { message: allAgents };
+  findAll() {
+    return this.ticketsService.findAll();
   }
 
   @Get(":id")
-  findOne(@Param("id", new ParseUUIDPipe()) id: UUID) {
-    return this.agentsService.findOne(id);
+  findOne(@Param("id") id: UUID) {
+    return this.ticketsService.findOne(id);
   }
 
   @Patch(":id")
   @UseInterceptors(FileInterceptor("picture"))
-  update(
-    @Param("id", new ParseUUIDPipe()) id: UUID,
-    @Body(new IsLegalPipe()) updateAgentDto: UpdateAgentDto,
+  modify(
+    @Param("id") id: UUID,
+    @Body() updateTicketDto: UpdateTicketDto,
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
@@ -74,6 +74,16 @@ export class AgentsController {
     )
     file: Express.Multer.File,
   ) {
-    return this.agentsService.update(id, updateAgentDto, file);
+    return this.ticketsService.modify(id, updateTicketDto, file);
+  }
+
+  @Patch("/process/:id")
+  process(@Param("id") id: UUID) {
+    return this.ticketsService.process(id);
+  }
+
+  @Delete(":id")
+  eliminate(@Param("id") id: UUID) {
+    return this.ticketsService.eliminate(id);
   }
 }

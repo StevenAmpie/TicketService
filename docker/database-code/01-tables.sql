@@ -29,6 +29,7 @@ CREATE TABLE "Tickets" (
                            picture TEXT NOT NULL,
                            "openedAt" TIMESTAMPTZ(0) DEFAULT NOW() NOT NULL,
                            "closedAt" TIMESTAMPTZ(0) DEFAULT NULL,
+                           "eliminatedAt" TIMESTAMPTZ(0) DEFAULT NULL,
                            status VARCHAR(10) NOT NULL DEFAULT 'opened',
                            "clientId" UUID NOT NULL,
                            CONSTRAINT ck_tickets_status CHECK(status in('opened', 'processing', 'processed', 'eliminated')),
@@ -59,8 +60,7 @@ CREATE TABLE "TicketsCases" (
 );
 
 CREATE TABLE "RefreshTokens" (
-                                 id TEXT CONSTRAINT pk_refreshTokens PRIMARY KEY,
-                                 "clientId" UUID NOT NULL,
-                                 "expiresAt" BIGINT NOT NULL,
-                                 CONSTRAINT fk_refreshTokens FOREIGN KEY ("clientId") REFERENCES "Clients"(id)
-);
+    id UUID CONSTRAINT pk_refreshTokens PRIMARY KEY DEFAULT gen_random_uuid(),
+    token TEXT NOT NULL,
+    "userId" UUID NOT NULL,
+    "expiresAt" BIGINT NOT NULL);
