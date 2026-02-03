@@ -9,8 +9,6 @@ import { TicketsModule } from "./tickets/tickets.module";
 import { CommentsModule } from "./comments/comments.module";
 import awsConfig from "./config/aws.config";
 import jwtConfig from "./config/jwt.config";
-import { APP_GUARD } from "@nestjs/core";
-import { RolesGuard } from "./guards/roles.guards";
 import { ChatModule } from "./chat/chat.module";
 
 @Module({
@@ -38,11 +36,6 @@ import { ChatModule } from "./chat/chat.module";
     ChatModule,
   ],
   controllers: [],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-  ],
+  providers: [],
 })
 export class AppModule {}
