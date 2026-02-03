@@ -9,6 +9,7 @@ import { compare } from "bcrypt";
 import { RefreshToken } from "./entities/refresh-token.entity";
 import { generateRefreshToken } from "src/helpers/generateRefreshToken";
 import { SignOptions } from "jsonwebtoken";
+import { Agent } from "../agents/entities/agent.entity";
 
 type ExpiresIn = SignOptions["expiresIn"];
 
@@ -21,6 +22,8 @@ export class AuthService {
     private readonly client: Repository<Client>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(Agent)
+    private readonly agentService: Repository<Agent>,
   ) {}
 
   async login(loginData: LoginDto) {
@@ -30,7 +33,6 @@ export class AuthService {
 
     const payload = {
       sub: loginData.id,
-      username: loginData.username,
       role: loginData.role,
     };
     const { refreshToken, refreshTokenHashed, refreshExpiresIn } =
@@ -54,14 +56,22 @@ export class AuthService {
   }
 
   async validateUser(email: string, password: string) {
+    const regexAgent = /^[A-Za-z][A-Za-z0-9.]*@megatech\.org$/;
+    if (regexAgent.test(email)) {
+      const agent = await this.agentService.findOneBy({ email: email });
+      const isAgentValid = agent && (await compare(password, agent?.password));
+      if (isAgentValid) {
+        return {
+          id: agent.id,
+          role: agent.role,
+        };
+      }
+    }
     const client = await this.client.findOneBy({ email: email });
     const isClientValid = client && (await compare(password, client.password));
     if (isClientValid) {
       return {
         id: client.id,
-        email: client.email,
-        password: password,
-        username: client.username,
         role: client.role,
       };
     }
@@ -102,7 +112,6 @@ export class AuthService {
     }
     const payload = {
       sub: client.id,
-      username: client.username,
       role: client.role,
     };
     const secretkey: string = this.configService.getOrThrow("JWT_SECRET_KEY");

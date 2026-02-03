@@ -1,9 +1,9 @@
 import {
   IsDateString,
-  IsEmail,
+  IsNotEmpty,
   IsString,
+  Matches,
   MaxLength,
-  MinLength,
 } from "class-validator";
 
 export class CreateClientDto {
@@ -14,18 +14,29 @@ export class CreateClientDto {
   username: string;
 
   @IsDateString(
-    {},
-    {
-      message: "La fecha no está en el formato adecuado YYYY-MM-DD ISO 8601",
-    },
+    { strict: true },
+    { message: "La fecha ingresada no es válida" },
   )
   dateOfBirth: string;
 
-  @IsString({ message: "Debe ser string" })
-  @IsEmail({}, { message: "Debe ser un email" })
+  @Matches(
+    /^[A-Za-z][A-Za-z0-9.]*@(?!megatech\.org$)[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+    {
+      message:
+        "El correo electrónico no puede pertenecer al dominio de Megatech",
+    },
+  )
+  @MaxLength(50, {
+    message: "El correo electrónico no puede exceder los 50 caracteres",
+  })
   email: string;
 
-  @IsString({ message: "La contraseña debe contener letras" })
-  @MinLength(8, { message: "La contraseña debe ser mayor a 8 letras" })
+  @Matches(/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@#$¡*]).{9,}$/, {
+    message:
+      "La contraseña debe tener más de 8 caracteres, un caracter especial(@, #, $, ¡ o*), número(s) y letras.",
+  })
+  @IsNotEmpty({
+    message: "La contraseña no puede estar vacía",
+  })
   password: string;
 }
