@@ -7,9 +7,11 @@ import {
 import { Reflector } from "@nestjs/core";
 import { Roles } from "../decorators/roles.decorator";
 import matchRoles from "../helpers/matchRoles";
-import { Client } from "../clients/entities/client.entity";
+import { Request } from "express";
+
 @Injectable()
 export class RolesGuard implements CanActivate {
+  private match: boolean = false;
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -21,12 +23,13 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     const request: Request = context.switchToHttp().getRequest();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const user: Client = request["user"];
-    const match = matchRoles(roles, user.role);
-    if (!match) {
+    const user = request.user;
+    if (user) {
+      this.match = matchRoles(roles, user["role"] as string);
+    }
+    if (!this.match) {
       throw new ForbiddenException("No puede acceder a este recurso");
     }
-    return match;
+    return this.match;
   }
 }

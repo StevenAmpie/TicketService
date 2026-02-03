@@ -10,12 +10,12 @@ import { UpdateAgentDto } from "./dto/update-agent.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Agent } from "./entities/agent.entity";
 import { Repository } from "typeorm";
-import { UUID } from "node:crypto";
 import type { Express } from "express";
 import { S3Service } from "../s3/s3.service";
 import { S3Bucket } from "../s3/s3-bucket";
 import { hashPassword } from "../helpers/hashPassword";
 import comparePassword from "../helpers/comparePassword";
+
 @Injectable()
 export class AgentsService {
   constructor(
@@ -63,28 +63,32 @@ export class AgentsService {
     return agents.map(({ password, ...filteredAgents }) => filteredAgents);
   }
 
-  async findOne(id: UUID) {
+  async findOne(id: string) {
     const agent = await this.agentsRepository
       .createQueryBuilder("agent")
       .where("agent.id = :id", { id })
       .getOne();
     if (!agent) {
-      throw new HttpException("No encontré nada LOL", HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        "No existe operador con ese identificador",
+        HttpStatus.NOT_FOUND,
+      );
     }
+    agent.picture = (await this.s3Service.getOneSignedUrl(
+      agent.picture,
+    )) as string;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...filteredAgent } = agent;
     return filteredAgent;
   }
 
   async update(
-    id: UUID,
+    id: string,
     updateAgentDto: UpdateAgentDto,
     file: Express.Multer.File,
   ) {
     if (!Object.keys(updateAgentDto).length && !file) {
-      throw new UnprocessableEntityException(
-        "Necesitar actualizar algún campo",
-      );
+      throw new UnprocessableEntityException("Necesita actualizar algún campo");
     }
     const foundAgent = await this.agentsRepository
       .createQueryBuilder("agent")
@@ -112,20 +116,23 @@ export class AgentsService {
       }
       updateAgentDto.password = await hashPassword(updateAgentDto.password);
     }
-    if (file) {
-      const newUrlKey = await this.s3Service.updateFile({
-        newFile: file,
-        oldKey: foundAgent.picture,
-      });
-      if (!newUrlKey) {
-        throw new ConflictException(
-          "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
-        );
-      }
-      updateAgentDto["picture"] = newUrlKey;
+
+    const newUrlKey = await this.s3Service.updateFile({
+      newFile: file,
+      oldKey: foundAgent.picture,
+    });
+    if (!newUrlKey) {
+      throw new ConflictException(
+        "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
+      );
     }
+    updateAgentDto["picture"] = newUrlKey;
+
     const updateAgent = this.agentsRepository.merge(foundAgent, updateAgentDto);
     const updatedAgent = await this.agentsRepository.save(updateAgent);
+    updatedAgent.picture = (await this.s3Service.getOneSignedUrl(
+      updatedAgent.picture,
+    )) as string;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...filteredAgent } = updatedAgent;
     return filteredAgent;
