@@ -11,10 +11,10 @@ import { Request } from "express";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  private match: boolean = false;
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    let match = false;
     const roles = this.reflector.getAllAndOverride(Roles, [
       context.getHandler(),
       context.getClass(),
@@ -25,11 +25,11 @@ export class RolesGuard implements CanActivate {
     const request: Request = context.switchToHttp().getRequest();
     const user = request.user;
     if (user) {
-      this.match = matchRoles(roles, user["role"] as string);
+      match = matchRoles(roles, user["role"] as string);
     }
-    if (!this.match) {
+    if (!match) {
       throw new ForbiddenException("No puede acceder a este recurso");
     }
-    return this.match;
+    return match;
   }
 }

@@ -46,7 +46,8 @@ export class TicketsService {
       picture: urlKey,
       clientId,
     });
-    return await this.ticketsRepository.save(newTicket);
+    await this.ticketsRepository.save(newTicket);
+    return { success: true, message: "Ticket creado exitosamente" };
   }
 
   async assignTicket(ticketId: UUID, agentId: string) {
@@ -185,16 +186,18 @@ export class TicketsService {
       throw new NotFoundException("No se encontró el ticket deseado");
     }
 
-    const newPictureKey = await this.s3Service.updateFile({
-      newFile: file,
-      oldKey: ticket.picture,
-    });
-    if (!newPictureKey) {
-      throw new ConflictException(
-        "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
-      );
+    if (file) {
+      const newPictureKey = await this.s3Service.updateFile({
+        newFile: file,
+        oldKey: ticket.picture,
+      });
+      if (!newPictureKey) {
+        throw new ConflictException(
+          "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
+        );
+      }
+      updateTicketDto["picture"] = newPictureKey;
     }
-    updateTicketDto["picture"] = newPictureKey;
 
     const updatedTicket = this.ticketsRepository.merge(ticket, updateTicketDto);
     await this.ticketsRepository.save(updatedTicket);
@@ -209,11 +212,8 @@ export class TicketsService {
       },
     });
     if (!ticket) {
-      throw new NotFoundException("No se encontró dicho ticket");
-    }
-    if (ticket.status !== "processing") {
-      throw new ConflictException(
-        "No puede finalizar un ticket que no se está procesando",
+      throw new NotFoundException(
+        "No se encontró un ticket con ese código que se esté procesando",
       );
     }
     const updateTicket = await this.ticketsRepository.update(id, {
