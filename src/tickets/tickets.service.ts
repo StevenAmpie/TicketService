@@ -1,10 +1,10 @@
 import {
-  BadRequestException,
   ConflictException,
   HttpException,
   HttpStatus,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
   UnprocessableEntityException,
 } from "@nestjs/common";
 import { CreateTicketDto } from "./dto/create-ticket.dto";
@@ -18,7 +18,6 @@ import { S3Bucket } from "../s3/s3-bucket";
 import { S3Service } from "../s3/s3.service";
 import { TicketCase } from "../tickets-cases/dto/create-ticket-case-dto";
 
-type role = "agent" | "client";
 @Injectable()
 export class TicketsService {
   constructor(
@@ -30,14 +29,11 @@ export class TicketsService {
     private s3Bucket: S3Bucket,
   ) {}
 
-  async create(createTicketDto: CreateTicketDto, file: Express.Multer.File) {
-    // get clientId -> mock value for now
-    const mockedClientId: UUID = "69b39bd1-09ec-4609-88c6-63ec966c7ffb"; // use custom client id for testing
-    if (!file) {
-      throw new BadRequestException(
-        "Para crear un ticket necesita suministrar una foto",
-      );
-    }
+  async create(
+    clientId: string,
+    createTicketDto: CreateTicketDto,
+    file: Express.Multer.File,
+  ) {
     const urlKey = this.s3Bucket.generateUrlKey(file);
     await this.s3Service.upload({
       key: urlKey,
@@ -48,13 +44,12 @@ export class TicketsService {
       title: createTicketDto.title,
       detail: createTicketDto.detail,
       picture: urlKey,
-      clientId: mockedClientId,
+      clientId,
     });
     return await this.ticketsRepository.save(newTicket);
   }
 
-  async assignTicket(ticketId: UUID) {
-    const mockAgentId = "b42c5130-e645-4e23-aca7-81be88f79c73";
+  async assignTicket(ticketId: UUID, agentId: string) {
     const hasBeenAssigned = await this.findOpenTicket(ticketId);
     if (!hasBeenAssigned) {
       throw new ConflictException(
@@ -62,7 +57,7 @@ export class TicketsService {
       );
     }
     const assignedTicket = this.ticketCaseRepository.create({
-      agentId: mockAgentId,
+      agentId,
       ticketId,
     });
     const wasTicketAssigned =
@@ -75,18 +70,21 @@ export class TicketsService {
     return { success: true, message: "Ticket asignado exitosamente" };
   }
 
-  async findAll() {
-    const mockRoles: role = "agent";
+  async findAll(id: string, role: string) {
     const allTickets = await this.ticketsRepository.find();
     if (!allTickets.length) {
       throw new NotFoundException("No hay tickets por el momento");
     }
-    //add validation with JWT payload role
-    // Id, title, detail, status, date -> no picture, closedAt, clientId
-    if (mockRoles !== "agent") {
+    if (role !== "agent") {
       const filteredClientTickets = allTickets.filter(ticket => {
-        return ticket.status === "opened" || ticket.status === "processing";
+        return (
+          ticket.clientId === id &&
+          (ticket.status === "opened" || ticket.status === "processing")
+        );
       });
+      if (!filteredClientTickets.length) {
+        throw new NotFoundException("No hay tickets por el momento");
+      }
       return filteredClientTickets.map(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ({ picture, closedAt, clientId, ...frontendData }) => {
@@ -108,7 +106,7 @@ export class TicketsService {
   async findOpenTicket(id: UUID) {
     const ticket = await this.ticketsRepository.findOne({
       where: {
-        id: id,
+        id,
         status: "opened",
       },
     });
@@ -118,54 +116,101 @@ export class TicketsService {
     return ticket;
   }
 
-  async findOne(id: UUID) {
-    const ticket = await this.ticketsRepository.findOne({
+  async findOne(id: UUID, clientId: string, role: string) {
+    if (role !== "client") {
+      const ticket = await this.findOpenTicket(id);
+      if (!ticket) {
+        throw new HttpException("No hay tickets", HttpStatus.NOT_FOUND);
+      }
+      const {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        id: ticketId,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        closedAt,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        status,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        clientId,
+        ...frontendData
+      } = ticket;
+      return frontendData;
+    }
+    const clientTicket = await this.ticketsRepository.findOne({
       where: {
-        id: id,
-        status: "processing",
+        id,
+        status: "opened",
+        clientId,
       },
     });
-    if (!ticket) {
-      throw new HttpException(
-        "El ticket solicitado no está disponible",
-        HttpStatus.CONFLICT,
-      );
+    if (!clientTicket) {
+      throw new UnauthorizedException("Ese ticket no le pertenece");
     }
-    return ticket;
+    clientTicket.picture = (await this.s3Service.getOneSignedUrl(
+      clientTicket.picture,
+    )) as string;
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      id: ticketId,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      closedAt,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      status,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      clientId: currentClientId,
+      ...frontendData
+    } = clientTicket;
+    return frontendData;
   }
 
   async modify(
+    clientId: string,
     id: UUID,
     updateTicketDto: UpdateTicketDto,
     file: Express.Multer.File,
   ) {
-    // A Client only endpoint
     if (!Object.keys(updateTicketDto).length && !file) {
       throw new UnprocessableEntityException(
         "Necesitar actualizar algún campo",
       );
     }
-    const ticket = await this.findOne(id);
-    if (file) {
-      const newPictureKey = await this.s3Service.updateFile({
-        newFile: file,
-        oldKey: ticket.picture,
-      });
-      if (!newPictureKey) {
-        throw new ConflictException(
-          "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
-        );
-      }
-      updateTicketDto["picture"] = newPictureKey;
+    const ticket = await this.ticketsRepository.findOne({
+      where: {
+        id,
+        status: "opened",
+        clientId,
+      },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException("No se encontró el ticket deseado");
     }
+
+    const newPictureKey = await this.s3Service.updateFile({
+      newFile: file,
+      oldKey: ticket.picture,
+    });
+    if (!newPictureKey) {
+      throw new ConflictException(
+        "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
+      );
+    }
+    updateTicketDto["picture"] = newPictureKey;
+
     const updatedTicket = this.ticketsRepository.merge(ticket, updateTicketDto);
     await this.ticketsRepository.save(updatedTicket);
     return { success: true, message: "El ticket fue actualizado exitosamente" };
   }
 
   async process(id: UUID) {
-    // An Agent only endpoint
-    const ticket = await this.findOne(id);
+    const ticket = await this.ticketsRepository.findOne({
+      where: {
+        id,
+        status: "processing",
+      },
+    });
+    if (!ticket) {
+      throw new NotFoundException("No se encontró dicho ticket");
+    }
     if (ticket.status !== "processing") {
       throw new ConflictException(
         "No puede finalizar un ticket que no se está procesando",
@@ -180,12 +225,16 @@ export class TicketsService {
     return { success: true, message: "El ticket fue procesado exitosamente" };
   }
 
-  async eliminate(id: UUID) {
-    // A Client only endpoint
+  async eliminate(clientId: string, id: UUID) {
     const ticket = await this.findOpenTicket(id);
     if (!ticket) {
       throw new ConflictException(
         "No puede eliminar un ticket que no está en el estado de abierto",
+      );
+    }
+    if (ticket.clientId !== clientId) {
+      throw new UnauthorizedException(
+        "No puede eliminar un ticket que no le pertenece",
       );
     }
     const removedTicket = await this.ticketsRepository.update(id, {
