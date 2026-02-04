@@ -9,8 +9,7 @@ import { TicketsModule } from "./tickets/tickets.module";
 import { CommentsModule } from "./comments/comments.module";
 import awsConfig from "./config/aws.config";
 import jwtConfig from "./config/jwt.config";
-import { APP_GUARD, APP_FILTER } from "@nestjs/core";
-import { RolesGuard } from "./guards/roles.guards";
+import { APP_FILTER } from "@nestjs/core";
 import { SentryModule, SentryGlobalFilter } from "@sentry/nestjs/setup";
 import { ChatModule } from "./chat/chat.module";
 
