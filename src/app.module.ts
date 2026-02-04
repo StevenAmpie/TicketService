@@ -9,10 +9,13 @@ import { TicketsModule } from "./tickets/tickets.module";
 import { CommentsModule } from "./comments/comments.module";
 import awsConfig from "./config/aws.config";
 import jwtConfig from "./config/jwt.config";
+import { APP_FILTER } from "@nestjs/core";
+import { SentryModule, SentryGlobalFilter } from "@sentry/nestjs/setup";
 import { ChatModule } from "./chat/chat.module";
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       load: [awsConfig, jwtConfig],
       isGlobal: true,
@@ -36,6 +39,11 @@ import { ChatModule } from "./chat/chat.module";
     ChatModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
+  ],
 })
 export class AppModule {}
