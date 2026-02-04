@@ -17,12 +17,15 @@ import { Repository } from "typeorm";
 import { S3Bucket } from "../s3/s3-bucket";
 import { S3Service } from "../s3/s3.service";
 import { TicketCase } from "../tickets-cases/dto/create-ticket-case-dto";
+import { Client } from "../clients/entities/client.entity";
 
 @Injectable()
 export class TicketsService {
   constructor(
     @InjectRepository(Ticket)
     private ticketsRepository: Repository<Ticket>,
+    @InjectRepository(Client)
+    private clientsRepository: Repository<Client>,
     @InjectRepository(TicketCase)
     private ticketCaseRepository: Repository<TicketCase>,
     private s3Service: S3Service,
@@ -136,6 +139,7 @@ export class TicketsService {
       } = ticket;
       return frontendData;
     }
+    //add client username to return
     const clientTicket = await this.ticketsRepository.findOne({
       where: {
         id,
@@ -146,6 +150,11 @@ export class TicketsService {
     if (!clientTicket) {
       throw new UnauthorizedException("Ese ticket no le pertenece");
     }
+    const client = await this.clientsRepository.findOne({
+      where: {
+        id: clientTicket.clientId,
+      },
+    });
     clientTicket.picture = (await this.s3Service.getOneSignedUrl(
       clientTicket.picture,
     )) as string;
@@ -160,6 +169,9 @@ export class TicketsService {
       clientId: currentClientId,
       ...frontendData
     } = clientTicket;
+    if (client) {
+      frontendData["clientUsername"] = client.id;
+    }
     return frontendData;
   }
 
