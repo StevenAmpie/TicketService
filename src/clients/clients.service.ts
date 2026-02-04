@@ -65,7 +65,7 @@ export class ClientsService {
     const createdClient = await this.clientsRepository.save(newClient);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...clientResponse } = createdClient;
-    return await this.clientsRepository.save(clientResponse);
+    return clientResponse;
   }
 
   async findAll() {

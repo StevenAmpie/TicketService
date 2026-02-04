@@ -26,6 +26,12 @@ export class CommentsService {
   ) {}
 
   async findAllByTicketId(ticketId: string, user: JwtDto) {
+    if (user.role !== "client" && user.role !== "agent") {
+      throw new UnauthorizedException(
+        "No tienes permiso para ver este recurso",
+      );
+    }
+
     if (user.role === "client") {
       const verifiedClient = await this.ticketRepository.findOne({
         where: { id: ticketId, clientId: user.sub },
