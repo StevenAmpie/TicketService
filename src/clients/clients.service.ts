@@ -1,4 +1,11 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 import { CreateClientDto } from "./dto/create-client.dto";
 import { UpdateClientDto } from "./dto/update-client.dto";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -6,16 +13,15 @@ import { Client } from "./entities/client.entity";
 import { Not, Repository } from "typeorm";
 import { hashPassword } from "../helpers/hashPassword";
 import type { Express } from "express";
-import { ConfigService } from "@nestjs/config";
 import { S3Bucket } from "src/s3/s3-bucket";
 import { S3Service } from "src/s3/s3.service";
+import comparePassword from "src/helpers/comparePassword";
 
 @Injectable()
 export class ClientsService {
   constructor(
     @InjectRepository(Client)
     private readonly clientsRepository: Repository<Client>,
-    private readonly configService: ConfigService,
     private readonly s3Service: S3Service,
     private readonly s3Bucket: S3Bucket,
   ) {}
@@ -56,7 +62,10 @@ export class ClientsService {
     createClientDto["password"] = await hashPassword(createClientDto.password);
     createClientDto["picture"] = urlKey;
     const newClient = this.clientsRepository.create(createClientDto);
-    return await this.clientsRepository.save(newClient);
+    const createdClient = await this.clientsRepository.save(newClient);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...clientResponse } = createdClient;
+    return clientResponse;
   }
 
   async findAll() {
@@ -75,14 +84,27 @@ export class ClientsService {
     if (!client) {
       throw new HttpException("No se ha encontrado", HttpStatus.NOT_FOUND);
     }
-    return client;
+
+    const url = await this.s3Service.getOneSignedUrl(client.picture);
+
+    return { ...client, urlPicture: url };
   }
 
-  async update(id: string, updateClientDto: UpdateClientDto) {
+  async update(
+    id: string,
+    updateClientDto: UpdateClientDto,
+    picture: Express.Multer.File,
+  ) {
+    if (!Object.keys(updateClientDto).length && !picture) {
+      throw new UnprocessableEntityException(
+        "Necesitar actualizar algún campo",
+      );
+    }
+
     const client = await this.clientsRepository.findOne({ where: { id } });
 
     if (!client) {
-      throw new HttpException("No se ha encontrado", HttpStatus.NOT_FOUND);
+      throw new NotFoundException("Ocurrio un error, intente nuevamente");
     }
 
     const userName = await this.clientsRepository
@@ -99,11 +121,39 @@ export class ClientsService {
       );
     }
 
-    // toDO = Delete last picture with input key from the user, and give him a new key.
-    updateClientDto["picture"] = "ruta";
+    const clientPassword: string = client.password;
+    if (updateClientDto.password) {
+      if (
+        await comparePassword({
+          dtoPassword: updateClientDto.password,
+          dbPassword: clientPassword,
+        })
+      ) {
+        throw new HttpException(
+          "Su contraseña no puede ser igual a la anterior",
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      updateClientDto.password = await hashPassword(updateClientDto.password);
+    }
 
-    this.clientsRepository.merge(client, updateClientDto);
+    if (picture) {
+      const newUrlKey = await this.s3Service.updateFile({
+        newFile: picture,
+        oldKey: client.picture,
+      });
+      if (!newUrlKey) {
+        throw new ConflictException(
+          "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
+        );
+      }
+      updateClientDto["picture"] = newUrlKey;
+    }
 
-    return await this.clientsRepository.save(client);
+    const updateClient = this.clientsRepository.merge(client, updateClientDto);
+    const updatedClient = await this.clientsRepository.save(updateClient);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...filteredClient } = updatedClient;
+    return filteredClient;
   }
 }

@@ -86,10 +86,9 @@ export class S3Service {
         Key: fileKey,
       });
       await this.s3ClientService.send(fileObject);
-      const signedUrl = await getSignedUrl(this.s3ClientService, fileObject, {
+      return await getSignedUrl(this.s3ClientService, fileObject, {
         expiresIn: 3600,
       });
-      return { url: signedUrl };
     } catch (e: unknown) {
       if (e instanceof NoSuchKey) {
         throw new NotFoundException(e.message);

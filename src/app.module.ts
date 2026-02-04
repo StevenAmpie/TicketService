@@ -12,6 +12,7 @@ import jwtConfig from "./config/jwt.config";
 import { APP_GUARD, APP_FILTER } from "@nestjs/core";
 import { RolesGuard } from "./guards/roles.guards";
 import { SentryModule, SentryGlobalFilter } from "@sentry/nestjs/setup";
+import { ChatModule } from "./chat/chat.module";
 
 @Module({
   imports: [
@@ -36,16 +37,13 @@ import { SentryModule, SentryGlobalFilter } from "@sentry/nestjs/setup";
     S3Module,
     TicketsModule,
     CommentsModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [
     {
       provide: APP_FILTER,
       useClass: SentryGlobalFilter,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
     },
   ],
 })

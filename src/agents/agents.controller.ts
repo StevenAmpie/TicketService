@@ -4,21 +4,24 @@ import {
   Post,
   Body,
   Patch,
-  Param,
   UsePipes,
   ValidationPipe,
-  ParseUUIDPipe,
   UploadedFile,
   UseInterceptors,
   ParseFilePipeBuilder,
+  UseGuards,
 } from "@nestjs/common";
 import { AgentsService } from "./agents.service";
 import { CreateAgentDto } from "./dto/create-agent.dto";
 import { UpdateAgentDto } from "./dto/update-agent.dto";
-import type { UUID } from "node:crypto";
 import { IsLegalPipe } from "../clients/pipes/isLegal.pipe";
 import type { Express } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../guards/roles.guards";
+import { Roles } from "../decorators/roles.decorator";
+import { CurrentUser } from "../decorators/getCurrentUser.decorator";
+import { JwtDto } from "../auth/dto/jwt-dto";
 
 @Controller("agents")
 @UsePipes(new ValidationPipe({ transform: true }))
@@ -45,21 +48,27 @@ export class AgentsController {
     return this.agentsService.create(createAgentDto, file);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(["agent"])
   @Get()
   async findAll() {
     const allAgents = await this.agentsService.findAll();
     return { message: allAgents };
   }
 
-  @Get(":id")
-  findOne(@Param("id", new ParseUUIDPipe()) id: UUID) {
-    return this.agentsService.findOne(id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(["agent"])
+  @Get("/profile")
+  findOne(@CurrentUser() user: JwtDto) {
+    return this.agentsService.findOne(user.sub);
   }
 
-  @Patch(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(["agent"])
+  @Patch("/update")
   @UseInterceptors(FileInterceptor("picture"))
   update(
-    @Param("id", new ParseUUIDPipe()) id: UUID,
+    @CurrentUser() user: JwtDto,
     @Body(new IsLegalPipe()) updateAgentDto: UpdateAgentDto,
     @UploadedFile(
       new ParseFilePipeBuilder()
@@ -74,6 +83,6 @@ export class AgentsController {
     )
     file: Express.Multer.File,
   ) {
-    return this.agentsService.update(id, updateAgentDto, file);
+    return this.agentsService.update(user.sub, updateAgentDto, file);
   }
 }
