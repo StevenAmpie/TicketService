@@ -44,7 +44,7 @@ export class ClientsService {
     }
 
     if (exceptions.length >= 1) {
-      throw new HttpException({ detail: exceptions }, HttpStatus.CONFLICT);
+      throw new HttpException({ message: exceptions }, HttpStatus.CONFLICT);
     }
 
     const urlKey = this.s3Bucket.generateUrlKey(file);
