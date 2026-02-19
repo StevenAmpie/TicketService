@@ -40,11 +40,19 @@ export class AuthController {
       path: "/auth",
     });
 
-    return { accessToken };
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    return { success: true, status: 200 };
   }
 
   @Post("auth/refresh")
   async refreshToken(
+    @Res({ passthrough: true }) res: Response,
     @getAccessToken() accessToken: JwtDto | null,
     @Cookies("refreshToken") refreshToken: string,
   ) {
@@ -55,7 +63,19 @@ export class AuthController {
     if (!accessToken) {
       throw new UnauthorizedException("Access-Token inválido");
     }
-    return await this.authService.refreshToken(accessToken, refreshToken);
+    const newAccessToken = await this.authService.refreshToken(
+      accessToken,
+      refreshToken,
+    );
+
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    return { success: true, status: 200 };
   }
 
   @UseGuards(JwtAuthGuard)
