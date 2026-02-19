@@ -10,6 +10,7 @@ import { RefreshToken } from "./entities/refresh-token.entity";
 import { generateRefreshToken } from "src/helpers/generateRefreshToken";
 import { SignOptions } from "jsonwebtoken";
 import { Agent } from "../agents/entities/agent.entity";
+import { JwtDto } from "./dto/jwt-dto";
 
 type ExpiresIn = SignOptions["expiresIn"];
 
@@ -95,8 +96,11 @@ export class AuthService {
     return currentToken;
   }
 
-  async refreshToken(userId: string, token: string) {
-    const currentToken = await this.getCurrentToken(userId, token);
+  async refreshToken(accessToken: JwtDto, refreshToken: string) {
+    const currentToken = await this.getCurrentToken(
+      accessToken.sub,
+      refreshToken,
+    );
 
     if (!currentToken) {
       throw new UnauthorizedException("Token no encontrado");
@@ -105,14 +109,9 @@ export class AuthService {
     if (Date.now() > Number(currentToken.expiresAt)) {
       throw new UnauthorizedException("Token expirado");
     }
-
-    const client = await this.client.findOneBy({ id: userId });
-    if (!client) {
-      throw new UnauthorizedException("Cliente no encontrado");
-    }
     const payload = {
-      sub: client.id,
-      role: client.role,
+      sub: accessToken.sub,
+      role: accessToken.role,
     };
     const secretkey: string = this.configService.getOrThrow("JWT_SECRET_KEY");
     const expiresTime: ExpiresIn =

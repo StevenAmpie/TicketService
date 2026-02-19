@@ -1,8 +1,6 @@
 import {
-  Body,
   Controller,
   Delete,
-  ParseUUIDPipe,
   Post,
   Res,
   UnauthorizedException,
@@ -16,6 +14,7 @@ import type { Response } from "express";
 import { Cookies } from "src/decorators/cookies.decorator";
 import { CurrentUser } from "src/decorators/getCurrentUser.decorator";
 import { JwtDto } from "./dto/jwt-dto";
+import { getAccessToken } from "../decorators/getAccessToken.decorator";
 
 @Controller()
 export class AuthController {
@@ -46,13 +45,17 @@ export class AuthController {
 
   @Post("auth/refresh")
   async refreshToken(
-    @Body("id", new ParseUUIDPipe()) userId: string,
+    @getAccessToken() accessToken: JwtDto,
     @Cookies("refreshToken") refreshToken: string,
   ) {
     if (!refreshToken) {
-      throw new UnauthorizedException("Token inválido");
+      throw new UnauthorizedException("Refresh-Token inválido");
     }
-    return await this.authService.refreshToken(userId, refreshToken);
+
+    if (!accessToken) {
+      throw new UnauthorizedException("Access-Token inválido");
+    }
+    return await this.authService.refreshToken(accessToken, refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)
