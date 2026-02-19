@@ -45,7 +45,7 @@ export class AuthController {
 
   @Post("auth/refresh")
   async refreshToken(
-    @getAccessToken() accessToken: JwtDto,
+    @getAccessToken() accessToken: JwtDto | null,
     @Cookies("refreshToken") refreshToken: string,
   ) {
     if (!refreshToken) {
