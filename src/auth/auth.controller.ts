@@ -13,8 +13,6 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import type { Response } from "express";
 import { Cookies } from "src/decorators/cookies.decorator";
 import { CurrentUser } from "src/decorators/getCurrentUser.decorator";
-import { JwtDto } from "./dto/jwt-dto";
-import { getAccessToken } from "../decorators/getAccessToken.decorator";
 
 @Controller()
 export class AuthController {
@@ -37,13 +35,15 @@ export class AuthController {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
-      path: "/auth",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
     });
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
       path: "/",
     });
 
@@ -53,20 +53,12 @@ export class AuthController {
   @Post("auth/refresh")
   async refreshToken(
     @Res({ passthrough: true }) res: Response,
-    @getAccessToken() accessToken: JwtDto | null,
     @Cookies("refreshToken") refreshToken: string,
   ) {
     if (!refreshToken) {
       throw new UnauthorizedException("Refresh-Token inválido");
     }
-
-    if (!accessToken) {
-      throw new UnauthorizedException("Access-Token inválido");
-    }
-    const newAccessToken = await this.authService.refreshToken(
-      accessToken,
-      refreshToken,
-    );
+    const newAccessToken = await this.authService.refreshToken(refreshToken);
 
     res.cookie("accessToken", newAccessToken, {
       httpOnly: true,
@@ -80,13 +72,10 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Delete("auth/logout")
-  async logout(
-    @CurrentUser() jwt: JwtDto,
-    @Cookies("refreshToken") refreshToken: string,
-  ) {
+  async logout(@Cookies("refreshToken") refreshToken: string) {
     if (!refreshToken) {
       throw new UnauthorizedException("Token inválido");
     }
-    return await this.authService.logout(jwt.sub, refreshToken);
+    return await this.authService.logout(refreshToken);
   }
 }

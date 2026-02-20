@@ -25,4 +25,11 @@ export class RefreshToken {
     nullable: false,
   })
   expiresAt: string;
+
+  @Column({
+    type: "varchar",
+    length: 6,
+    nullable: false,
+  })
+  role: string;
 }

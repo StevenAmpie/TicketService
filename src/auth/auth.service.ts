@@ -10,7 +10,6 @@ import { RefreshToken } from "./entities/refresh-token.entity";
 import { generateRefreshToken } from "src/helpers/generateRefreshToken";
 import { SignOptions } from "jsonwebtoken";
 import { Agent } from "../agents/entities/agent.entity";
-import { JwtDto } from "./dto/jwt-dto";
 
 type ExpiresIn = SignOptions["expiresIn"];
 
@@ -42,6 +41,7 @@ export class AuthService {
     const newRefreshToken = this.refreshTokenRepository.create({
       userId: loginData.id,
       token: refreshTokenHashed,
+      role: loginData.role,
       expiresAt: refreshExpiresIn.toString(),
     });
 
@@ -80,11 +80,9 @@ export class AuthService {
     return null;
   }
 
-  async getCurrentToken(userId: string, token: string) {
+  async getCurrentToken(token: string) {
     let currentToken: RefreshToken | null = null;
-    const refreshTokens = await this.refreshTokenRepository.findBy({
-      userId: userId,
-    });
+    const refreshTokens = await this.refreshTokenRepository.find();
 
     for (const refreshToken of refreshTokens) {
       if (await compare(token, refreshToken.token)) {
@@ -96,11 +94,8 @@ export class AuthService {
     return currentToken;
   }
 
-  async refreshToken(accessToken: JwtDto, refreshToken: string) {
-    const currentToken = await this.getCurrentToken(
-      accessToken.sub,
-      refreshToken,
-    );
+  async refreshToken(refreshToken: string) {
+    const currentToken = await this.getCurrentToken(refreshToken);
 
     if (!currentToken) {
       throw new UnauthorizedException("Token no encontrado");
@@ -110,8 +105,8 @@ export class AuthService {
       throw new UnauthorizedException("Token expirado");
     }
     const payload = {
-      sub: accessToken.sub,
-      role: accessToken.role,
+      sub: currentToken.userId,
+      role: currentToken.role,
     };
     const secretkey: string = this.configService.getOrThrow("JWT_SECRET_KEY");
     const expiresTime: ExpiresIn =
@@ -125,8 +120,8 @@ export class AuthService {
     };
   }
 
-  async logout(userId: string, token: string) {
-    const currentToken = await this.getCurrentToken(userId, token);
+  async logout(token: string) {
+    const currentToken = await this.getCurrentToken(token);
 
     if (!currentToken) {
       throw new UnauthorizedException("Token no encontrado");
