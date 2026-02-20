@@ -63,4 +63,6 @@ CREATE TABLE "RefreshTokens" (
     id UUID CONSTRAINT pk_refreshTokens PRIMARY KEY DEFAULT gen_random_uuid(),
     token TEXT NOT NULL,
     "userId" UUID NOT NULL,
-    "expiresAt" BIGINT NOT NULL);
+    "expiresAt" BIGINT NOT NULL,
+    role VARCHAR(6) NOT NULL
+);
