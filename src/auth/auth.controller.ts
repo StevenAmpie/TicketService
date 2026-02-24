@@ -60,14 +60,14 @@ export class AuthController {
     }
     const newAccessToken = await this.authService.refreshToken(refreshToken);
 
-    res.cookie("accessToken", newAccessToken, {
+    res.cookie("accessToken", newAccessToken.accessToken, {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
       path: "/",
     });
 
-    return { success: true, status: 200 };
+    return { accessToken: newAccessToken.accessToken };
   }
 
   @UseGuards(JwtAuthGuard)
