@@ -107,6 +107,41 @@ export class TicketsService {
     );
   }
 
+  async findHistory(id: string, role: string) {
+    if (role !== "agent") {
+      const clientHistory = await this.ticketsRepository.find({
+        where: {
+          clientId: id,
+          status: "processed",
+        },
+      });
+      if (!clientHistory.length) {
+        throw new HttpException("No hay tickets", HttpStatus.NOT_FOUND);
+      }
+      return clientHistory.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        ({ picture, closedAt, clientId, ...frontendData }) => {
+          return frontendData;
+        },
+      );
+    }
+    const agentHistory = await this.ticketsRepository
+      .createQueryBuilder("ticket")
+      .innerJoin("ticket.agents", "agent")
+      .where("agent.id = :id", { id })
+      .andWhere("ticket.status = :status", { status: "processed" })
+      .getMany();
+    if (!agentHistory.length) {
+      throw new HttpException("No hay tickets", HttpStatus.NOT_FOUND);
+    }
+    return agentHistory.map(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ({ picture, closedAt, clientId, ...frontendData }) => {
+        return frontendData;
+      },
+    );
+  }
+
   async findOpenTicket(id: UUID) {
     const ticket = await this.ticketsRepository.findOne({
       where: {
@@ -159,8 +194,6 @@ export class TicketsService {
       clientTicket.picture,
     )) as string;
     const {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      id: ticketId,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       closedAt,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars

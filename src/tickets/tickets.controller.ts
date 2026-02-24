@@ -60,8 +60,15 @@ export class TicketsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(["agent", "client"])
   @Get("/available")
-  findAll(@CurrentUser() user: JwtDto) {
+  findAllAvailable(@CurrentUser() user: JwtDto) {
     return this.ticketsService.findAll(user.sub, user.role);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(["agent", "client"])
+  @Get("/history")
+  findHistory(@CurrentUser() user: JwtDto) {
+    return this.ticketsService.findHistory(user.sub, user.role);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

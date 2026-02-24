@@ -4,6 +4,8 @@ import {
   OneToMany,
   CreateDateColumn,
   PrimaryGeneratedColumn,
+  JoinTable,
+  ManyToMany,
 } from "typeorm";
 import { Comment } from "../../comments/entities/comment.entity";
 import { Agent } from "../../agents/entities/agent.entity";
@@ -64,6 +66,7 @@ export class Ticket {
   @OneToMany(() => Comment, comment => comment.ticketId)
   comments: Comment[];
 
-  @OneToMany(() => Agent, agent => agent.id)
+  @ManyToMany(() => Agent, agent => agent.tickets)
+  @JoinTable()
   agents: Agent[];
 }

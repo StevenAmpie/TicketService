@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  ManyToMany,
+} from "typeorm";
 import { Ticket } from "../../tickets/entities/ticket.entity";
 import { Comment } from "../../comments/entities/comment.entity";
 
@@ -52,6 +58,6 @@ export class Agent {
 
   @OneToMany(() => Comment, comment => comment.agentId)
   comment: Comment[];
-  @OneToMany(() => Ticket, ticket => ticket.id)
+  @ManyToMany(() => Ticket, ticket => ticket.agents)
   tickets: Ticket[];
 }
