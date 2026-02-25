@@ -13,7 +13,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Ticket } from "./entities/ticket.entity";
 import { UUID } from "node:crypto";
 import type { Express } from "express";
-import { Repository } from "typeorm";
+import { Not, Repository } from "typeorm";
 import { S3Bucket } from "../s3/s3-bucket";
 import { S3Service } from "../s3/s3.service";
 import { TicketCase } from "../tickets-cases/dto/create-ticket-case-dto";
@@ -75,7 +75,10 @@ export class TicketsService {
   }
 
   async findAll(id: string, role: string) {
-    const allTickets = await this.ticketsRepository.find();
+    const allTickets = await this.ticketsRepository
+      .createQueryBuilder("ticket")
+      .orderBy("ticket.openedAt", "DESC")
+      .getMany();
     if (!allTickets.length) {
       throw new NotFoundException("No hay tickets por el momento");
     }
@@ -109,12 +112,12 @@ export class TicketsService {
 
   async findHistory(id: string, role: string) {
     if (role !== "agent") {
-      const clientHistory = await this.ticketsRepository.find({
-        where: {
-          clientId: id,
-          status: "processed",
-        },
-      });
+      const clientHistory = await this.ticketsRepository
+        .createQueryBuilder("ticket")
+        .where("ticket.clientId = :id", { id })
+        .andWhere("ticket.status = :status", { status: "processed" })
+        .orderBy("ticket.openedAt", "DESC")
+        .getMany();
       if (!clientHistory.length) {
         throw new HttpException("No hay tickets", HttpStatus.NOT_FOUND);
       }
@@ -130,6 +133,7 @@ export class TicketsService {
       .innerJoin("ticket.agents", "agent")
       .where("agent.id = :id", { id })
       .andWhere("ticket.status = :status", { status: "processed" })
+      .orderBy("ticket.openedAt", "DESC")
       .getMany();
     if (!agentHistory.length) {
       throw new HttpException("No hay tickets", HttpStatus.NOT_FOUND);
@@ -161,6 +165,11 @@ export class TicketsService {
       if (!ticket) {
         throw new HttpException("No hay tickets", HttpStatus.NOT_FOUND);
       }
+      const client = await this.clientsRepository.findOne({
+        where: {
+          id: ticket.clientId,
+        },
+      });
       const {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         id: ticketId,
@@ -172,24 +181,23 @@ export class TicketsService {
         clientId,
         ...frontendData
       } = ticket;
+      if (client) {
+        frontendData["clientUsername"] = client.username;
+      }
       return frontendData;
     }
     //add client username to return
     const clientTicket = await this.ticketsRepository.findOne({
       where: {
         id,
-        status: "opened",
+        status: Not("eliminated"),
         clientId,
       },
     });
     if (!clientTicket) {
       throw new UnauthorizedException("Ese ticket no le pertenece");
     }
-    const client = await this.clientsRepository.findOne({
-      where: {
-        id: clientTicket.clientId,
-      },
-    });
+
     clientTicket.picture = (await this.s3Service.getOneSignedUrl(
       clientTicket.picture,
     )) as string;
@@ -202,9 +210,6 @@ export class TicketsService {
       clientId: currentClientId,
       ...frontendData
     } = clientTicket;
-    if (client) {
-      frontendData["clientUsername"] = client.id;
-    }
     return frontendData;
   }
 
