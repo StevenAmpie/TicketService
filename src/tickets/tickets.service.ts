@@ -18,6 +18,7 @@ import { S3Bucket } from "../s3/s3-bucket";
 import { S3Service } from "../s3/s3.service";
 import { TicketCase } from "../tickets-cases/dto/create-ticket-case-dto";
 import { Client } from "../clients/entities/client.entity";
+import { Agent } from "../agents/entities/agent.entity";
 
 @Injectable()
 export class TicketsService {
@@ -28,6 +29,8 @@ export class TicketsService {
     private clientsRepository: Repository<Client>,
     @InjectRepository(TicketCase)
     private ticketCaseRepository: Repository<TicketCase>,
+    @InjectRepository(Agent)
+    private agentRepository: Repository<Agent>,
     private s3Service: S3Service,
     private s3Bucket: S3Bucket,
   ) {}
@@ -150,7 +153,7 @@ export class TicketsService {
     const ticket = await this.ticketsRepository.findOne({
       where: {
         id,
-        status: "opened",
+        status: "processing",
       },
     });
     if (!ticket) {
@@ -159,7 +162,7 @@ export class TicketsService {
     return ticket;
   }
 
-  async findOne(id: UUID, clientId: string, role: string) {
+  async findOne(id: UUID, userId: string, role: string) {
     if (role !== "client") {
       const ticket = await this.findOpenTicket(id);
       if (!ticket) {
@@ -170,9 +173,10 @@ export class TicketsService {
           id: ticket.clientId,
         },
       });
+      ticket.picture = (await this.s3Service.getOneSignedUrl(
+        ticket.picture,
+      )) as string;
       const {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        id: ticketId,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         closedAt,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -182,8 +186,10 @@ export class TicketsService {
         ...frontendData
       } = ticket;
       if (client) {
-        frontendData["clientUsername"] = client.username;
+        frontendData["username"] = client.username;
       }
+      frontendData["agentId"] = userId;
+      frontendData["role"] = role;
       return frontendData;
     }
     //add client username to return
@@ -191,7 +197,7 @@ export class TicketsService {
       where: {
         id,
         status: Not("eliminated"),
-        clientId,
+        clientId: userId,
       },
     });
     if (!clientTicket) {
@@ -206,10 +212,22 @@ export class TicketsService {
       closedAt,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       status,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      clientId: currentClientId,
       ...frontendData
     } = clientTicket;
+
+    const agentName: { fullName: string } | undefined =
+      await this.agentRepository
+        .createQueryBuilder("agent")
+        .select("agent.fullName", "fullName")
+        .innerJoin("TicketsCases", "ticket", "ticket.agentId = agent.id")
+        .where("ticket.ticketId = :ticketId", {
+          ticketId: id,
+        })
+        .getRawOne();
+
+    frontendData["role"] = role;
+    frontendData["username"] = agentName?.fullName ?? "Operador";
+
     return frontendData;
   }
 
