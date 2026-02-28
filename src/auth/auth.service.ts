@@ -124,7 +124,7 @@ export class AuthService {
     const currentToken = await this.getCurrentToken(token);
 
     if (!currentToken) {
-      throw new UnauthorizedException("Token no encontrado");
+      throw new UnauthorizedException(`Token ${currentToken} no encontrado`);
     }
 
     await this.refreshTokenRepository.delete(currentToken);
