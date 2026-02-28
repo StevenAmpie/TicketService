@@ -13,6 +13,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.setGlobalPrefix("api");
   app.enableCors({
     origin: true,
     credentials: true,
