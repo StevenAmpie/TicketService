@@ -29,6 +29,9 @@ import { ChatModule } from "./chat/chat.module";
       database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: false,
+      ssl: {
+        rejectUnauthorized: false,
+      },
     }),
     AuthModule,
     AgentsModule,
