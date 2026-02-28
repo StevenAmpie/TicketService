@@ -24,30 +24,11 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post("login")
-  async login(
-    @CurrentUser() loginData: LoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async login(@CurrentUser() loginData: LoginDto) {
     const { accessToken, refreshToken } =
       await this.authService.login(loginData);
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: false,
-      secure: false,
-      sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000,
-      path: "/",
-    });
-
-    res.cookie("accessToken", accessToken, {
-      httpOnly: false,
-      secure: false,
-      sameSite: "none",
-      maxAge: 15 * 60 * 1000,
-      path: "/",
-    });
-
-    return { success: true, status: 200 };
+    return { success: true, status: 200, accessToken, refreshToken };
   }
 
   @Post("auth/refresh")
@@ -59,13 +40,6 @@ export class AuthController {
       throw new UnauthorizedException("Refresh-Token inválido");
     }
     const newAccessToken = await this.authService.refreshToken(refreshToken);
-
-    res.cookie("accessToken", newAccessToken.accessToken, {
-      httpOnly: false,
-      secure: false,
-      sameSite: "none",
-      path: "/",
-    });
 
     return { accessToken: newAccessToken.accessToken };
   }
