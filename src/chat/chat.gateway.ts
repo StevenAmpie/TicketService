@@ -9,7 +9,7 @@ import { Server, Socket } from "socket.io";
 import { CommentsService } from "../comments/comments.service";
 import { CreateCommentDto } from "../comments/dto/create-comment.dto";
 
-@WebSocketGateway(81, {
+@WebSocketGateway({
   cors: {
     origin: "*",
     credentials: true,
