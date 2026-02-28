@@ -32,17 +32,17 @@ export class AuthController {
       await this.authService.login(loginData);
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false,
-      sameSite: "lax",
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
       path: "/",
     });
 
     res.cookie("accessToken", accessToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false,
-      sameSite: "lax",
+      sameSite: "none",
       maxAge: 15 * 60 * 1000,
       path: "/",
     });
@@ -61,9 +61,9 @@ export class AuthController {
     const newAccessToken = await this.authService.refreshToken(refreshToken);
 
     res.cookie("accessToken", newAccessToken.accessToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false,
-      sameSite: "lax",
+      sameSite: "none",
       path: "/",
     });
 
