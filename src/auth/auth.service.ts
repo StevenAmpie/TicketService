@@ -98,7 +98,7 @@ export class AuthService {
     const currentToken = await this.getCurrentToken(refreshToken);
 
     if (!currentToken) {
-      throw new UnauthorizedException("Token no encontrado");
+      throw new UnauthorizedException(`Token ${currentToken} no encontrado`);
     }
 
     if (Date.now() > Number(currentToken.expiresAt)) {
