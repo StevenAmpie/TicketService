@@ -149,11 +149,11 @@ export class TicketsService {
     );
   }
 
-  async findOpenTicket(id: UUID) {
+  async findOpenTicket(id: UUID, status: string = "opened") {
     const ticket = await this.ticketsRepository.findOne({
       where: {
         id,
-        status: "processing",
+        status: status,
       },
     });
     if (!ticket) {
@@ -164,7 +164,7 @@ export class TicketsService {
 
   async findOne(id: UUID, userId: string, role: string) {
     if (role !== "client") {
-      const ticket = await this.findOpenTicket(id);
+      const ticket = await this.findOpenTicket(id, "processing");
       if (!ticket) {
         throw new HttpException("No hay tickets", HttpStatus.NOT_FOUND);
       }
