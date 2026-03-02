@@ -185,8 +185,6 @@ export class TicketsService {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         closedAt,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        status,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         clientId,
         ...frontendData
       } = ticket;
