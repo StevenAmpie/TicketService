@@ -117,22 +117,21 @@ export class AgentsService {
       updateAgentDto.password = await hashPassword(updateAgentDto.password);
     }
 
-    const newUrlKey = await this.s3Service.updateFile({
-      newFile: file,
-      oldKey: foundAgent.picture,
-    });
-    if (!newUrlKey) {
-      throw new ConflictException(
-        "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
-      );
+    if (file) {
+      const newUrlKey = await this.s3Service.updateFile({
+        newFile: file,
+        oldKey: foundAgent.picture,
+      });
+      if (!newUrlKey) {
+        throw new ConflictException(
+          "Ocurrió un error al momento de actualizar su imagen, intente nuevamente",
+        );
+      }
+      updateAgentDto["picture"] = newUrlKey;
     }
-    updateAgentDto["picture"] = newUrlKey;
 
     const updateAgent = this.agentsRepository.merge(foundAgent, updateAgentDto);
     const updatedAgent = await this.agentsRepository.save(updateAgent);
-    updatedAgent.picture = (await this.s3Service.getOneSignedUrl(
-      updatedAgent.picture,
-    )) as string;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...filteredAgent } = updatedAgent;
     return filteredAgent;
