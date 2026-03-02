@@ -10,6 +10,7 @@ import { CommentsService } from "../comments/comments.service";
 import { CreateCommentDto } from "../comments/dto/create-comment.dto";
 
 @WebSocketGateway({
+  path: "/api/ws",
   cors: {
     origin: "*",
     credentials: true,
