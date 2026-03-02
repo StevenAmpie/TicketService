@@ -61,8 +61,11 @@ export class TicketsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(["agent", "client"])
   @Get("/available")
-  findAllAvailable(@CurrentUser() user: JwtDto) {
-    return this.ticketsService.findAll(user.sub, user.role);
+  findAllAvailable(
+    @CurrentUser() user: JwtDto,
+    @Query("status") status: string,
+  ) {
+    return this.ticketsService.findAll(user.sub, user.role, status);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

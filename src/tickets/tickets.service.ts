@@ -77,7 +77,7 @@ export class TicketsService {
     return { success: true, message: "Ticket asignado exitosamente" };
   }
 
-  async findAll(id: string, role: string) {
+  async findAll(id: string, role: string, status: string = "opened") {
     const allTickets = await this.ticketsRepository
       .createQueryBuilder("ticket")
       .orderBy("ticket.openedAt", "DESC")
@@ -103,7 +103,7 @@ export class TicketsService {
       );
     }
     const filteredAgentTickets = allTickets.filter(ticket => {
-      return ticket.status === "opened";
+      return ticket.status === status;
     });
     return filteredAgentTickets.map(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -133,10 +133,15 @@ export class TicketsService {
     }
     const agentHistory = await this.ticketsRepository
       .createQueryBuilder("ticket")
-      .innerJoin("ticket.agents", "agent")
-      .where("agent.id = :id", { id })
-      .andWhere("ticket.status = :status", { status: "processed" })
-      .orderBy("ticket.openedAt", "DESC")
+      .innerJoin(
+        "TicketsCases",
+        "ticketCase",
+        `"ticketCase"."ticketId" = "ticket"."id"`,
+      )
+      .innerJoin("Agents", "agent", `"agent"."id" = "ticketCase"."agentId"`)
+      .where(`"agent"."id" = :agentId`, { agentId: id })
+      .andWhere(`"ticket"."status" = :status`, { status: "processed" })
+      .orderBy(`"ticket"."openedAt"`, "DESC")
       .getMany();
     if (!agentHistory.length) {
       throw new HttpException("No hay tickets", HttpStatus.NOT_FOUND);
