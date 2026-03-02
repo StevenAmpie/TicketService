@@ -10,6 +10,7 @@ import {
   UploadedFile,
   ParseFilePipeBuilder,
   UseGuards,
+  Query,
 } from "@nestjs/common";
 import { TicketsService } from "./tickets.service";
 import { CreateTicketDto } from "./dto/create-ticket.dto";
@@ -74,8 +75,12 @@ export class TicketsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(["agent", "client"])
   @Get(":id")
-  findOne(@CurrentUser() user: JwtDto, @Param("id") id: UUID) {
-    return this.ticketsService.findOne(id, user.sub, user.role);
+  findOne(
+    @CurrentUser() user: JwtDto,
+    @Param("id") id: UUID,
+    @Query() body: { status: string },
+  ) {
+    return this.ticketsService.findOne(id, user.sub, user.role, body.status);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
